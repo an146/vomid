@@ -1,0 +1,3 @@
+[submodule "libvomid"]
+	path = libvomid
+	url = git://ebanat.org/~anton/libvomid.git
