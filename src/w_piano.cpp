@@ -1,4 +1,5 @@
 #include <QKeyEvent>
+#include <QInputDialog>
 #include <QPainter>
 #include <QPaintEvent>
 #include <QScrollArea>
@@ -154,7 +155,10 @@ WPiano::focusOutEvent(QFocusEvent *)
 void
 WPiano::keyPressEvent(QKeyEvent *ev)
 {
-	switch (ev->key()) {
+	int key = ev->key();
+	key |= ev->modifiers() & (Qt::CTRL | Qt::SHIFT);
+
+	switch (key) {
 	case Qt::Key_Escape:
 		capture_mouse(false);
 		break;
@@ -177,6 +181,28 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 			player_->stop();
 		else
 			player_->play(file(), cursor_time_);
+		break;
+	case Qt::Key_N:
+	case Qt::Key_M:
+		{
+			QString s = QInputDialog::getText(
+				this,
+				"vomid",
+				key == Qt::Key_N ? QString("Enter cursor size:") : QString("Enter grid size:")
+			);
+			QStringList sl = s.split("/");
+			if (sl.size() != 2)
+				break;
+			int n = sl[0].toInt();
+			int m = sl[1].toInt();
+			if (n <= 0 && m <= 0)
+				break;
+			vmd_time_t size = file()->division * 4 * n / m;
+			if (key == Qt::Key_N)
+				cursor_size_ = size;
+			else
+				grid_size_ = size;
+		}
 		break;
 	default:
 		return QWidget::keyPressEvent(ev);
