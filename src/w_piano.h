@@ -41,6 +41,7 @@ public:
 	Player *player() { return player_; }
 
 	void adjust_y();
+	void toggle_note();
 
 protected:
 	void focusOutEvent(QFocusEvent *);

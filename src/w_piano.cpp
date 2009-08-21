@@ -204,6 +204,10 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 				grid_size_ = size;
 		}
 		break;
+	case Qt::Key_Enter:
+	case Qt::Key_Return:
+		toggle_note();
+		break;
 	default:
 		return QWidget::keyPressEvent(ev);
 	}
@@ -247,19 +251,8 @@ WPiano::mousePressEvent(QMouseEvent *ev)
 		if (!mouse_captured_) {
 			capture_mouse();
 			mouseMoveEvent(ev);
-		} else {
-			vmd_pitch_t p = cursor_pitch();
-			if (p < 0)
-				break;
-			int erased = vmd_track_erase_range(track(), cursor_x(), cursor_r(), p, p + 1);
-			if (erased <= 0) {
-				vmd_track_insert(track(), cursor_time(), cursor_time() + cursor_size(), p);
-				file()->commit("Insert Note");
-			} else if (erased == 1) {
-				file()->commit("Erase Note");
-			} else
-				file()->commit("Erase Notes");
-		}
+		} else
+			toggle_note();
 		break;
 	default:
 		;
@@ -423,6 +416,22 @@ WPiano::adjust_y()
 {
 	cursor_level_ = avg_level(track(), x_time(), r_time());
 	look_at_cursor(CENTER);
+}
+
+void
+WPiano::toggle_note()
+{
+	vmd_pitch_t p = cursor_pitch();
+	if (p < 0)
+		return;
+	int erased = vmd_track_erase_range(track(), cursor_x(), cursor_r(), p, p + 1);
+	if (erased <= 0) {
+		vmd_track_insert(track(), cursor_time(), cursor_time() + cursor_size(), p);
+		file()->commit("Insert Note");
+	} else if (erased == 1) {
+		file()->commit("Erase Note");
+	} else
+		file()->commit("Erase Notes");
 }
 
 void
