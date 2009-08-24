@@ -12,7 +12,8 @@ enum_clb(const char *id, const char *, void *)
 }
 
 Player::Player()
-	:file_(NULL)
+	:file_(NULL),
+	stopping_(false)
 {
 	vmd_enum_devices(VMD_OUTPUT_DEVICE, enum_clb, NULL);
 	connect(this, SIGNAL(finished()), this, SLOT(stop()));
@@ -47,8 +48,12 @@ Player::play(vmd_file_t *_file, vmd_time_t _time)
 void
 Player::stop()
 {
-	exit(1);
+	stop_mutex_.lock();
+	stopping_ = true;
+	stop_cond_.wakeAll();
+	stop_mutex_.unlock();
 	wait();
+	stopping_ = false;
 	file_ = NULL;
 }
 
@@ -63,6 +68,7 @@ struct Playing
 void
 Player::run()
 {
+	QMutexLocker locker(&stop_mutex_);
 	tempo_ = vmd_map_get(&file_->ctrl[VMD_FCTRL_TEMPO], time_, NULL);
 	system_time_ = vmd_systime();
 	vmd_file_play(file_, time_, s_event_clb, s_delay_clb, this);
@@ -85,8 +91,7 @@ Player::delay_clb(vmd_time_t dtime, int _tempo)
 	int msec_wait = int((fin_time - vmd_systime()) * 1000);
 	if (msec_wait < 0)
 		msec_wait = 0;
-	QTimer::singleShot(msec_wait, this, SLOT(quit()));
-	if (exec() != 0)
+	if (stop_cond_.wait(&stop_mutex_, msec_wait) || stopping_)
 		return VMD_STOP;
 
 	QMutexLocker lock(&mutex_);

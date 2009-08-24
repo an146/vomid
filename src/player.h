@@ -7,6 +7,7 @@
 
 #include <QMutex>
 #include <QThread>
+#include <QWaitCondition>
 #include <vomid.h>
 
 class Player : public QThread
@@ -32,11 +33,16 @@ private:
 	static void s_event_clb(unsigned char *, size_t, void *);
 	static vmd_status_t s_delay_clb(vmd_time_t, int, void *);
 
-	mutable QMutex mutex_;
 	vmd_file_t *file_;
 	vmd_time_t time_;
 	int tempo_;
 	double system_time_;
+
+	mutable QMutex mutex_;
+
+	QMutex stop_mutex_;
+	QWaitCondition stop_cond_;
+	volatile bool stopping_;
 };
 
 #endif /* PLAYER_H */
