@@ -62,6 +62,7 @@ protected slots:
 	void playStarted();
 	void playUpdate();
 	void playStopped();
+	void clipCursor();
 
 private:
 	QTimer update_timer_;

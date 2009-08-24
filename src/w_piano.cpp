@@ -9,6 +9,10 @@
 #include "w_main.h"
 #include "w_piano.h"
 
+#ifdef Q_WS_WIN
+#include <windows.h>
+#endif
+
 const int margin = 50;
 const int level_height = 5;
 const int scroll_margin = 5;
@@ -91,6 +95,7 @@ WPiano::WPiano(File *_file, vmd_track_t *_track, vmd_time_t time, Player *_playe
 	connect(file_, SIGNAL(acted()), this, SLOT(update()));
 	connect(player_, SIGNAL(started()), this, SLOT(playStarted()));
 	connect(&update_timer_, SIGNAL(timeout()), this, SLOT(playUpdate()));
+	connect(&update_timer_, SIGNAL(timeout()), this, SLOT(clipCursor()));
 	connect(player_, SIGNAL(finished()), this, SLOT(playStopped()));
 	if (playing())
 		playStarted();
@@ -215,30 +220,45 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 	update();
 }
 
+static int
+clipped(int x, int s, int e)
+{
+	const int margin = 1;
+	if (x < s + margin)
+		return s + margin;
+	else if (x >= e - margin)
+		return e - margin - 1;
+	else
+		return x;
+}
+
+void
+WPiano::clipCursor()
+{
+	if (!mouse_captured_)
+		return;
+	QWidget *viewport = qobject_cast<QWidget *>(parent());
+	if (viewport == NULL)
+		return;
+	QPoint p1 = viewport->mapToGlobal(viewport->geometry().topLeft());
+	QPoint p2 = viewport->mapToGlobal(viewport->geometry().bottomRight());
+	int x = clipped(QCursor::pos().x(), p1.x(), p2.x());
+	int y = clipped(QCursor::pos().y(), p1.y(), p2.y());
+	QCursor::setPos(QPoint(x, y));
+}
+
 void
 WPiano::mouseMoveEvent(QMouseEvent *ev)
 {
 	if (!mouse_captured_)
 		return;
 
+	clipCursor();
+
 	cursor_time_ = grid_snap_left(this, x2time(ev->x()));
 	float flevel = float(height() - margin - ev->y()) / level_height;
 	cursor_level_ = int(flevel + 0.5f);
 	update();
-
-	QWidget *viewport = qobject_cast<QWidget *>(parent());
-	if (viewport == NULL)
-		return;
-
-	QPoint p1 = mapFrom(viewport, viewport->geometry().topLeft());
-	QPoint p2 = mapFrom(viewport, viewport->geometry().bottomRight());
-	int x = ev->x() < p1.x() ? p1.x() :
-			ev->x() > p2.x() ? p2.x() :
-			ev->x();
-	int y = ev->y() < p1.y() ? p1.y() :
-			ev->y() > p2.y() ? p2.y() :
-			ev->y();
-	QCursor::setPos(mapToGlobal(QPoint(x, y)));
 
 	look_at_cursor(MINSCROLL);
 }
@@ -346,10 +366,29 @@ WPiano::capture_mouse(bool capture)
 	if (capture && playing())
 		return;
 
-	if (capture)
-		grabMouse(Qt::BlankCursor);
-	else
+	if (capture) {
+#ifdef Q_WS_WIN
+		QWidget *viewport = qobject_cast<QWidget *>(parent());
+		QPoint p1 = viewport->mapToGlobal(viewport->geometry().topLeft());
+		QPoint p2 = viewport->mapToGlobal(viewport->geometry().bottomRight());
+		RECT rect = {p1.x(), p1.y(), p2.x(), p2.y()};
+		ClipCursor(&rect);
+
+		// be sure that cursor doesn't reach the clip boundary
+		update_timer_.start();
+#else
+		grabMouse();
+#endif
+		setCursor(Qt::BlankCursor);
+	} else {
+#ifdef Q_WS_WIN
+		ClipCursor(NULL);
+		update_timer_.stop();
+#else
 		releaseMouse();
+#endif
+		setCursor(Qt::ArrowCursor);
+	}
 	mouse_captured_ = capture;
 	setMouseTracking(mouse_captured_);
 }
@@ -440,14 +479,14 @@ WPiano::playStarted()
 	if (playing()) {
 		capture_mouse(false);
 		update_timer_.start();
-		update();
+		playUpdate();
 	}
 }
 
 void
 WPiano::playUpdate()
 {
-	if (cursor_time_ == player_->time())
+	if (!playing() || cursor_time_ == player_->time())
 		return;
 	vmd_time_t prev_time = cursor_time_;
 	cursor_time_ = player_->time();
