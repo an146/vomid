@@ -42,6 +42,8 @@ Player::play(vmd_file_t *_file, vmd_time_t _time)
 	stop();
 	file_ = _file;
 	time_ = _time;
+	tempo_ = vmd_map_get(&file_->ctrl[VMD_FCTRL_TEMPO], time_, NULL);
+	system_time_ = vmd_systime();
 	start();
 }
 
@@ -69,8 +71,6 @@ void
 Player::run()
 {
 	QMutexLocker locker(&stop_mutex_);
-	tempo_ = vmd_map_get(&file_->ctrl[VMD_FCTRL_TEMPO], time_, NULL);
-	system_time_ = vmd_systime();
 	vmd_file_play(file_, time_, s_event_clb, s_delay_clb, this);
 	vmd_notes_off();
 }
