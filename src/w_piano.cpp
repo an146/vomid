@@ -339,7 +339,7 @@ WPiano::paintEvent(QPaintEvent *ev)
 	/* cursor */
 	if (playing()) {
 		painter.setPen(QPen());
-		int x = time2x(player_->time());
+		int x = time2x(cursor_time_);
 		painter.drawLine(x, 0, x, height());
 	} else {
 		Qt::GlobalColor colors[3] = {
