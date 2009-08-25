@@ -161,7 +161,7 @@ void
 WPiano::keyPressEvent(QKeyEvent *ev)
 {
 	int key = ev->key();
-	key |= ev->modifiers() & (Qt::CTRL | Qt::SHIFT);
+	int mod = ev->modifiers() & (Qt::CTRL | Qt::SHIFT);
 
 	switch (key) {
 	case Qt::Key_Escape:
@@ -187,13 +187,12 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 		else
 			player_->play(file(), cursor_time_);
 		break;
-	case Qt::Key_N:
-	case Qt::Key_M:
+	case Qt::Key_QuoteLeft:
 		{
 			QString s = QInputDialog::getText(
 				this,
 				"vomid",
-				key == Qt::Key_N ? QString("Enter cursor size:") : QString("Enter grid size:")
+				mod & Qt::CTRL ? QString("Enter grid size:") : QString("Enter cursor size:")
 			);
 			QStringList sl = s.split("/");
 			if (sl.size() != 2)
@@ -203,10 +202,22 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 			if (n <= 0 && m <= 0)
 				break;
 			vmd_time_t size = file()->division * 4 * n / m;
-			if (key == Qt::Key_N)
-				cursor_size_ = size;
-			else
+			if (mod & Qt::CTRL)
 				grid_size_ = size;
+			else
+				cursor_size_ = size;
+		}
+		break;
+	case Qt::Key_1: case Qt::Key_2: case Qt::Key_3: case Qt::Key_4:
+	case Qt::Key_5: case Qt::Key_6: case Qt::Key_7:
+		{
+			vmd_time_t size = file()->division * 4;
+			for (int i = 0; i < key - Qt::Key_1; i++)
+				size /= 2;
+			if (mod & Qt::CTRL)
+				grid_size_ = size;
+			else
+				cursor_size_ = size;
 		}
 		break;
 	case Qt::Key_Enter:
