@@ -17,6 +17,7 @@ WTrack::update_track()
 {
 	vmd_track_t *track = wfile->file()->track[idx];
 
+	ui->n->setChecked(wfile->track() == track);
 	ui->n->setText(QString::number(idx + 1));
 	ui->name->setText(track->name);
 	if (vmd_track_is_drums(track)) {
@@ -30,7 +31,7 @@ WTrack::update_track()
 }
 
 void
-WTrack::open()
+WTrack::open(bool on)
 {
-	wfile->open_track(wfile->file()->track[idx]);
+	wfile->open_track(on ? wfile->file()->track[idx] : NULL);
 }

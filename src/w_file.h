@@ -13,17 +13,18 @@ class File;
 class Player;
 class Ui_WFile;
 class Ui_WMain;
-class WTrack;
+class WPiano;
 
 class WFile : public QFrame
 {
 	Q_OBJECT
-	friend class WTrack;
 
 public:
 	WFile(File *, Player *, Ui_WMain *);
 
-	File *file() { return file_; }
+	File *file() const { return file_; }
+	WPiano *piano() const;
+	vmd_track_t *track() const;
 
 	void open_track(vmd_track_t *);
 	void update_tracks();

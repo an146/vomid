@@ -45,6 +45,9 @@
         <property name="text">
          <string>1</string>
         </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
         <property name="autoRaise">
          <bool>true</bool>
         </property>
@@ -266,9 +269,9 @@
  <connections>
   <connection>
    <sender>n</sender>
-   <signal>released()</signal>
+   <signal>toggled(bool)</signal>
    <receiver>WTrack</receiver>
-   <slot>open()</slot>
+   <slot>open(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>12</x>
@@ -282,6 +285,6 @@
   </connection>
  </connections>
  <slots>
-  <slot>open()</slot>
+  <slot>open(bool)</slot>
  </slots>
 </ui>

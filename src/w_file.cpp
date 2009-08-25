@@ -21,8 +21,21 @@ WFile::WFile(File *_file, Player *_player, Ui_WMain *_main_ui)
 	connect(file_, SIGNAL(acted()), this, SLOT(update_label()));
 }
 
+WPiano *
+WFile::piano() const
+{
+	return qobject_cast<WPiano *>(ui->scroll_area->widget());
+}
+
+vmd_track_t *
+WFile::track() const
+{
+	WPiano *p = piano();
+	return p ? p->track() : NULL;
+}
+
 static vmd_time_t
-cursor_time(WPiano *p)
+cursor_time(const WPiano *p)
 {
 	if (p == NULL)
 		return 0;
@@ -35,15 +48,18 @@ cursor_time(WPiano *p)
 void
 WFile::open_track(vmd_track_t *track)
 {
-	WPiano *prev = qobject_cast<WPiano *>(ui->scroll_area->widget());
+	WPiano *prev = piano();
 	vmd_time_t t = cursor_time(prev);
 	int x = ui->scroll_area->horizontalScrollBar()->value();
 
-	WPiano *w = new WPiano(file_, track, t, player_);
+	WPiano *w = track ? new WPiano(file_, track, t, player_) : NULL;
 	ui->scroll_area->setWidget(w);
-	w->setFocus(Qt::OtherFocusReason);
-	w->adjust_y();
+	if (w != NULL) {
+		w->setFocus(Qt::OtherFocusReason);
+		w->adjust_y();
+	}
 	ui->scroll_area->horizontalScrollBar()->setValue(x);
+	update_tracks();
 }
 
 void
@@ -53,7 +69,7 @@ WFile::update_tracks()
 	while (ui->tracks->count() > file()->tracks)
 		ui->tracks->removeItem(ui->tracks->itemAt(ui->tracks->count() - 1));
 	for (i = 0; i < ui->tracks->count(); i++)
-		static_cast<WTrack *>(ui->tracks->itemAt(i)->widget())->update();
+		static_cast<WTrack *>(ui->tracks->itemAt(i)->widget())->update_track();
 	for (i = ui->tracks->count(); i < file()->tracks; i++)
 		ui->tracks->addWidget(new WTrack(this, i));
 }

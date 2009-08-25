@@ -20,7 +20,7 @@ public:
 	void update_track();
 
 public slots:
-	void open();
+	void open(bool);
 
 private:
 	pimpl_ptr<Ui_WTrack> ui;

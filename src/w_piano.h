@@ -34,11 +34,9 @@ public:
 	vmd_time_t cursor_x() const    { return cursor_time_; }
 	vmd_time_t cursor_r() const    { return cursor_time_ + cursor_size_; }
 
-	vmd_track_t *track() { return track_; }
-	const vmd_track_t *track() const { return track_; }
-	File *file() { return file_; }
-	const File *file() const { return file_; }
-	Player *player() { return player_; }
+	vmd_track_t *track() const { return track_; }
+	File *file() const { return file_; }
+	Player *player() const { return player_; }
 
 	void adjust_y();
 	void toggle_note();

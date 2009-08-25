@@ -22,7 +22,7 @@ public:
 
 	FileRevision *revision() { return revision_; }
 	FileRevision *saved_revision() { return saved_revision_; }
-	QString filename() { return filename_; }
+	QString filename() const { return filename_; }
 	bool saved() const { return revision_ == saved_revision_; }
 
 	void save_as(QString);
