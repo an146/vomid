@@ -10,7 +10,9 @@
 
 class File;
 class Player;
+class SlotProxy;
 class Ui_WMain;
+class WFile;
 
 class WMain : public QMainWindow
 {
@@ -20,6 +22,7 @@ public:
 	WMain(Player *);
 	void open(File *);
 	File *file();
+	WFile *wfile();
 
 public slots:
 	bool close_tab(int = -1);
@@ -28,14 +31,14 @@ public slots:
 	void menu_open();
 	void menu_save();
 	void menu_saveas();
-
-	void update_menus();
+	void current_changed();
 
 protected:
 	void closeEvent(QCloseEvent *);
 
 private:
 	pimpl_ptr<Ui_WMain> ui;
+	pimpl_ptr<SlotProxy> file_proxy, wfile_proxy;
 	Player *player;
 };
 

@@ -27,10 +27,14 @@ public:
 	vmd_track_t *track() const;
 
 	void open_track(vmd_track_t *);
-	void update_tracks();
 
 public slots:
 	void update_label();
+	void update_tracks();
+
+	void addStandard();
+	void addDrums();
+	void addTet();
 
 private:
 	File *file_;

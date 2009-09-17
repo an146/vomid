@@ -42,7 +42,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>29</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -65,8 +65,23 @@
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
    </widget>
+   <widget class="QMenu" name="menuTrack">
+    <property name="title">
+     <string>Track</string>
+    </property>
+    <widget class="QMenu" name="menuNew">
+     <property name="title">
+      <string>New</string>
+     </property>
+     <addaction name="actionTrkStandard"/>
+     <addaction name="actionTrkDrums"/>
+     <addaction name="actionTrkTet"/>
+    </widget>
+    <addaction name="menuNew"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuTrack"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionNew">
@@ -107,6 +122,21 @@
   <action name="actionClose">
    <property name="text">
     <string>Close</string>
+   </property>
+  </action>
+  <action name="actionTrkStandard">
+   <property name="text">
+    <string>Standard MIDI</string>
+   </property>
+  </action>
+  <action name="actionTrkDrums">
+   <property name="text">
+    <string>Drums</string>
+   </property>
+  </action>
+  <action name="actionTrkTet">
+   <property name="text">
+    <string>TET...</string>
    </property>
   </action>
  </widget>
@@ -224,6 +254,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>tabs</sender>
+   <signal>currentChanged(int)</signal>
+   <receiver>WMain</receiver>
+   <slot>current_changed()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>399</x>
+     <y>302</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>menu_new()</slot>
@@ -232,5 +278,6 @@
   <slot>menu_saveas()</slot>
   <slot>close_tab()</slot>
   <slot>close_tab(int)</slot>
+  <slot>current_changed()</slot>
  </slots>
 </ui>

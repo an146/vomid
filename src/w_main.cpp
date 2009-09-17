@@ -3,19 +3,30 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include "file.h"
+#include "slot_proxy.h"
 #include "ui_w_main.h"
 #include "w_main.h"
 #include "w_file.h"
 
+#define ACTION(p, a, s) p->connect(ui->action##a, SIGNAL(triggered()), SLOT(s))
+#define FILE_ACTION(a, s)  ACTION(file_proxy, a, s)
+#define WFILE_ACTION(a, s) ACTION(wfile_proxy, a, s)
 #define STDICON(a, i) ui->action##a->setIcon(QApplication::style()->standardIcon(QStyle::i))
 #define STDSHORTCUT(a) ui->action##a->setShortcut(QKeySequence::a)
 
 WMain::WMain(Player *_player)
-	:player(_player)
+	:file_proxy(),
+	wfile_proxy(),
+	player(_player)
 {
 	ui->setupUi(this);
-	connect(ui->tabs, SIGNAL(currentChanged(int)), this, SLOT(update_menus()));
-	update_menus();
+
+	FILE_ACTION(Undo, undo());
+	FILE_ACTION(Redo, redo());
+	WFILE_ACTION(TrkStandard, addStandard());
+	WFILE_ACTION(TrkDrums, addDrums());
+	WFILE_ACTION(TrkTet, addTet());
+
 	STDICON(New,     SP_FileIcon);
 	STDICON(Open,    SP_DialogOpenButton);
 	STDICON(SaveAs,  SP_DialogSaveButton);
@@ -28,6 +39,8 @@ WMain::WMain(Player *_player)
 	STDSHORTCUT(Close);
 	STDSHORTCUT(Undo);
 	STDSHORTCUT(Redo);
+
+	current_changed();
 }
 
 void
@@ -36,14 +49,20 @@ WMain::open(File *f)
 	WFile *wfile = new WFile(f, player, ui);
 	ui->tabs->setCurrentIndex(ui->tabs->addTab(wfile, ""));
 	wfile->update_label();
-	connect(f, SIGNAL(acted()), this, SLOT(update_menus()));
+	connect(f, SIGNAL(acted()), this, SLOT(current_changed()));
 }
 
 File *
 WMain::file()
 {
-	WFile *wfile = qobject_cast<WFile *>(ui->tabs->currentWidget());
-	return wfile ? wfile->file() : NULL;
+	WFile *w = wfile();
+	return w ? w->file() : NULL;
+}
+
+WFile *
+WMain::wfile()
+{
+	return qobject_cast<WFile *>(ui->tabs->currentWidget());
 }
 
 void
@@ -134,9 +153,11 @@ WMain::close_tab(int idx)
 }
 
 void
-WMain::update_menus()
+WMain::current_changed()
 {
 	File *f = file();
+	file_proxy->setTarget(f);
+	wfile_proxy->setTarget(wfile());
 
 	/* File */
 	ui->actionSave->setEnabled(f && !f->saved());
@@ -145,24 +166,23 @@ WMain::update_menus()
 
 	/* Edit */
 	ui->menuEdit->setEnabled(f != NULL);
-	ui->actionUndo->disconnect();
 	if (f && f->revision()->prev() != NULL) {
 		ui->actionUndo->setText("Undo " + f->revision()->name());
 		ui->actionUndo->setEnabled(true);
-		connect(ui->actionUndo, SIGNAL(triggered()), f, SLOT(undo()));
 	} else {
 		ui->actionUndo->setText("Undo");
 		ui->actionUndo->setEnabled(false);
 	}
-	ui->actionRedo->disconnect();
 	if (f && f->revision()->next() != NULL) {
 		ui->actionRedo->setText("Redo " + f->revision()->next()->name());
 		ui->actionRedo->setEnabled(true);
-		connect(ui->actionRedo, SIGNAL(triggered()), f, SLOT(redo()));
 	} else {
 		ui->actionRedo->setText("Redo");
 		ui->actionRedo->setEnabled(false);
 	}
+
+	/* Track */
+	ui->menuTrack->setEnabled(f != NULL);
 }
 
 void

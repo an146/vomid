@@ -58,6 +58,15 @@ File::update(FileRevision *rev)
 }
 
 void
+File::add_track(const vmd_notesystem_t *ns)
+{
+	if (tracks == VMD_MAX_TRACKS - 1)
+		throw std::runtime_error("Max number of tracks reached");
+	track[tracks++] = vmd_track_create(this, ns);
+	commit("Add Track");
+}
+
+void
 File::undo()
 {
 	if (FileRevision *prev = revision()->prev()) {

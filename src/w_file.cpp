@@ -13,12 +13,13 @@ WFile::WFile(File *_file, Player *_player, Ui_WMain *_main_ui)
 	main_ui_(_main_ui)
 {
 	ui->setupUi(this);
-	update_tracks();
 	ui->scroll_area->setFocusPolicy(Qt::NoFocus);
 	ui->scroll_area->horizontalScrollBar()->setFocusPolicy(Qt::NoFocus);
 	ui->scroll_area->verticalScrollBar()->setFocusPolicy(Qt::NoFocus);
 
 	connect(file_, SIGNAL(acted()), this, SLOT(update_label()));
+	connect(file_, SIGNAL(acted()), this, SLOT(update_tracks()));
+	update_tracks();
 }
 
 WPiano *
@@ -84,4 +85,21 @@ WFile::update_label()
 	if (!file()->saved())
 		label = "* " + label;
 	tabs->setTabText(tabs->indexOf(this), label);
+}
+
+void
+WFile::addStandard()
+{
+	file()->add_track(&vmd_notesystem_midistd);
+}
+
+void
+WFile::addDrums()
+{
+	file()->add_track(&vmd_notesystem_drums);
+}
+
+void
+WFile::addTet()
+{
 }
