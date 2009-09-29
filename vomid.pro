@@ -22,9 +22,7 @@ LIBS += -Llibvomid/build -lvomid $$system("awk -F '+=' '/LDFLAGS\+\=/ {print $2;
 target.path = $$(PREFIX)/bin
 INSTALLS += target
 
-# Dependency fix
-vomid.depends += libvomid/build/libvomid.a
-QMAKE_EXTRA_TARGETS += vomid
+TARGETDEPS += libvomid/build/libvomid.a
 
 # Mac OS X deployment
 macx {
