@@ -81,8 +81,13 @@ WMain::menu_open()
 		"Midi files (*.mid);;All files (*)"
 	);
 
-	for (QStringList::const_iterator i = files.begin(); i != files.end(); ++i)
-		open(new File(*i));
+	for (QStringList::const_iterator i = files.begin(); i != files.end(); ++i) {
+		try {
+			open(new File(*i));
+		} catch (...) {
+			qWarning("Failed to open file");
+		}
+	}
 }
 
 void

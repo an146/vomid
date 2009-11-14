@@ -43,9 +43,19 @@ File::save_as(QString fn)
 void
 File::commit(QString name)
 {
+	FileRevision *newrev;
+
+	try {
+		newrev = new FileRevision(this, name);
+	} catch (const std::exception &ex) {
+		revert();
+		qWarning("%s: failed", name.toAscii().data());
+		return;
+	}
+
 	delete revision_->next_;
-	revision_->next_ = new FileRevision(this, name);
-	revision_ = revision_->next_;
+	revision_->next_ = newrev;
+	revision_ = newrev;
 	emit acted();
 }
 
@@ -55,6 +65,12 @@ File::update(FileRevision *rev)
 	vmd_file_update(this, rev->rev_);
 	revision_ = rev;
 	emit acted();
+}
+
+void
+File::revert()
+{
+	update(revision_);
 }
 
 void
@@ -90,6 +106,8 @@ FileRevision::FileRevision(File *f, QString _name)
 	prev_(f->revision()),
 	next_(NULL)
 {
+	if (rev_ == NULL)
+		throw std::runtime_error("File commit failed");
 }
 
 FileRevision::~FileRevision()

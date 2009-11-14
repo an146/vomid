@@ -28,6 +28,7 @@ public:
 	void save_as(QString);
 	void commit(QString);
 	void update(FileRevision *);
+	void revert();
 	void add_track(const vmd_notesystem_t *);
 
 public slots:
