@@ -3,7 +3,7 @@ all: vomid
 Makefile.qmake: libvomid/build/config.mk
 	qmake
 
-libvomid/build/libvomid.a: .FORCE
+libvomid/build/config.mk libvomid/build/libvomid.a: .FORCE
 	@cd libvomid && $(MAKE) $(MKOPTS) && cd ..
 
 vomid: libvomid/build/libvomid.a libvomid/include/vomid.h Makefile.qmake
