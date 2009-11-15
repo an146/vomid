@@ -73,13 +73,14 @@ File::revert()
 	update(revision_);
 }
 
-void
-File::add_track(const vmd_notesystem_t *ns)
+vmd_track_t *
+File::add_track(vmd_chanmask_t cm)
 {
 	if (tracks == VMD_MAX_TRACKS - 1)
 		throw std::runtime_error("Max number of tracks reached");
-	track[tracks++] = vmd_track_create(this, ns);
+	vmd_track_t *ret = track[tracks++] = vmd_track_create(this, cm);
 	commit("Add Track");
+	return ret;
 }
 
 void

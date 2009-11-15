@@ -46,6 +46,37 @@ grid_snap_right(WPiano *piano, vmd_time_t time)
 	return std::min(ret, measure.end);
 }
 
+static int
+pitch2level(const vmd_track_t *track, vmd_pitch_t p)
+{
+	const vmd_notesystem_t *ns = &track->notesystem;
+	int octaves = p / ns->size;
+	p %= ns->size;
+	return octaves * (vmd_notesystem_levels(ns) + 1) + vmd_notesystem_pitch2level(ns, p) + 1;
+}
+
+static int
+levels(const vmd_track_t *track)
+{
+	return pitch2level(track, track->notesystem.end_pitch);
+}
+
+static vmd_pitch_t
+level2pitch(const vmd_track_t *track, int level)
+{
+	if (level < 0 || level >= levels(track))
+		return -1;
+	const vmd_notesystem_t *ns = &track->notesystem;
+	int octaves = level / (vmd_notesystem_levels(ns) + 1);
+	level %= (vmd_notesystem_levels(ns) + 1);
+	if (level == 0)
+		return -1;
+	vmd_pitch_t octave_pitch = vmd_notesystem_level2pitch(ns, level - 1);
+	if (octave_pitch < 0)
+		return -1;
+	return octaves * ns->size + octave_pitch;
+}
+
 struct avg_note_arg {
 	vmd_track_t *track;
 	int min;
@@ -56,7 +87,7 @@ static void *
 avg_note_clb(vmd_note_t *note, void *_arg)
 {
 	avg_note_arg *arg = (avg_note_arg *)_arg;
-	int level = arg->track->rendersystem->pitch2level(note->pitch);
+	int level = pitch2level(note->track, note->pitch);
 	arg->min = std::min(arg->min, level);
 	arg->max = std::max(arg->max, level);
 	return NULL;
@@ -67,7 +98,7 @@ avg_level(vmd_track_t *track, vmd_time_t beg, vmd_time_t end)
 {
 	avg_note_arg arg = {
 		track,
-		track->rendersystem->levels,
+		levels(track),
 		0
 	};
 	vmd_track_range(track, beg, end, avg_note_clb, &arg);
@@ -85,7 +116,7 @@ WPiano::WPiano(File *_file, vmd_track_t *_track, vmd_time_t time, Player *_playe
 	player_(_player)
 {
 	int w = time2x(vmd_file_length(file()));
-	int h = margin * 2 + level_height * track()->rendersystem->levels;
+	int h = margin * 2 + level_height * levels(track());
 	setMinimumSize(w, h);
 	setBackgroundRole(QPalette::Base);
 	setAutoFillBackground(true);
@@ -122,7 +153,7 @@ WPiano::level2y(int level) const
 vmd_pitch_t
 WPiano::cursor_pitch() const
 {
-	return vmd_rendersystem_level2pitch(track()->rendersystem, cursor_level_);
+	return level2pitch(track(), cursor_level_);
 }
 
 bool
@@ -174,7 +205,7 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 		cursor_time_ = grid_snap_right(this, cursor_time_ + 1);
 		break;
 	case Qt::Key_Up:
-		if (cursor_level_ < track()->rendersystem->levels)
+		if (cursor_level_ < levels(track()))
 			cursor_level_++;
 		break;
 	case Qt::Key_Down:
@@ -311,13 +342,31 @@ draw_note(vmd_note_t *note, void *_painter)
 	QPainter *painter = static_cast<QPainter *>(_painter);
 	WPiano *piano = static_cast<WPiano *>(painter->device());
 
-	int level = piano->track()->rendersystem->pitch2level(note->pitch);
+	int level = pitch2level(piano->track(), note->pitch);
 	int y = piano->level2y(level);
 	int x1 = piano->time2x(note->on_time);
 	int x2 = piano->time2x(note->off_time);
 	painter->drawLine(x1, y, x2 - 1, y);
 	return NULL;
 }
+
+enum {
+	LEVEL_NORMAL,
+	LEVEL_LINE,
+	LEVEL_OCTAVE_LINE
+};
+
+static int
+level_style(const vmd_track_t *track, int level)
+{
+	int l = level % (vmd_notesystem_levels(&track->notesystem) + 1);
+	if (l == 0)
+		return LEVEL_OCTAVE_LINE;
+	else if (l % 2 == 0)
+		return LEVEL_LINE;
+	else
+		return LEVEL_NORMAL;
+};
 
 void
 WPiano::paintEvent(QPaintEvent *ev)
@@ -331,11 +380,11 @@ WPiano::paintEvent(QPaintEvent *ev)
 	vmd_file_measures(file(), beg, end + 1, draw_measure, &painter);
 
 	/* horizontal grid */
-	for (int i = 0; i < track()->rendersystem->levels; i++) {
-		int style = track()->rendersystem->level_style(i);
+	for (int i = 0; i < levels(track()); i++) {
+		int style = level_style(track(), i);
 		int y = level2y(i);
-		if (style != VMD_LEVEL_NORMAL) {
-			pen.setWidth(style == VMD_LEVEL_OCTAVE_LINE ? 2 : 0);
+		if (style != LEVEL_NORMAL) {
+			pen.setWidth(style == LEVEL_OCTAVE_LINE ? 2 : 0);
 			painter.setPen(pen);
 			painter.drawLine(0, y, width(), y);
 		}

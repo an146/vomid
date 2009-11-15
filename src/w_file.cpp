@@ -1,4 +1,5 @@
 #include <QFileInfo>
+#include <QInputDialog>
 #include <QScrollBar>
 #include "file.h"
 #include "ui_w_file.h"
@@ -90,16 +91,22 @@ WFile::update_label()
 void
 WFile::addStandard()
 {
-	file()->add_track(&vmd_notesystem_midistd);
+	file()->add_track();
 }
 
 void
 WFile::addDrums()
 {
-	file()->add_track(&vmd_notesystem_drums);
+	file()->add_track(VMD_CHANMASK_DRUMS);
 }
 
 void
 WFile::addTet()
 {
+	bool ok;
+	int n = QInputDialog::getInt(this, "vomid", "Enter scale base:", 17, 2, 100, 1, &ok);
+	if (ok) {
+		vmd_track_t *track = file()->add_track();
+		vmd_track_set_notesystem(track, vmd_notesystem_tet(n));
+	}
 }

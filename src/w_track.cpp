@@ -20,7 +20,7 @@ WTrack::update_track()
 	ui->n->setChecked(wfile->track() == track);
 	ui->n->setText(QString::number(idx + 1));
 	ui->name->setText(track->name);
-	if (vmd_track_is_drums(track)) {
+	if (track->chanmask == VMD_CHANMASK_DRUMS) {
 		ui->instr->setText("DRUMS");
 		ui->instr->setEnabled(false);
 	} else {

@@ -29,7 +29,7 @@ public:
 	void commit(QString);
 	void update(FileRevision *);
 	void revert();
-	void add_track(const vmd_notesystem_t *);
+	vmd_track_t *add_track(vmd_chanmask_t = VMD_CHANMASK_NODRUMS);
 
 public slots:
 	void undo();
