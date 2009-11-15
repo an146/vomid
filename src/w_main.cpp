@@ -109,15 +109,16 @@ WMain::menu_saveas()
 	if (f == NULL)
 		return;
 
-	QString fn = QFileDialog::getSaveFileName(
+	QFileDialog fd(
 		this,
 		QString(),
 		QString(),
 		"Midi files (*.mid);;All files (*)"
 	);
-
-	if (!fn.isEmpty())
-		f->save_as(fn);
+	fd.setAcceptMode(QFileDialog::AcceptSave);
+	fd.setDefaultSuffix("mid");
+	if (fd.exec())
+		f->save_as(fd.selectedFiles().first());
 }
 
 bool
