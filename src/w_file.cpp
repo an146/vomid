@@ -1,3 +1,4 @@
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QInputDialog>
 #include <QScrollBar>
@@ -108,5 +109,22 @@ WFile::addTet()
 	if (ok) {
 		vmd_track_t *track = file()->add_track();
 		vmd_track_set_notesystem(track, vmd_notesystem_tet(n));
+	}
+}
+
+void
+WFile::addScala()
+{
+	QString fn = QFileDialog::getOpenFileName(
+		this,
+		QString(),
+		QString(),
+		"Scala files (*.scl);;All files (*)"
+	);
+
+	vmd_notesystem_t ns = vmd_notesystem_import(fn.toLocal8Bit().data());
+	if (ns.pitches != NULL) {
+		vmd_track_t *track = file()->add_track();
+		vmd_track_set_notesystem(track, ns);
 	}
 }

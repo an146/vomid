@@ -76,6 +76,8 @@
      <addaction name="actionTrkStandard"/>
      <addaction name="actionTrkDrums"/>
      <addaction name="actionTrkTet"/>
+     <addaction name="separator"/>
+     <addaction name="actionTrkScala"/>
     </widget>
     <addaction name="menuNew"/>
    </widget>
@@ -137,6 +139,11 @@
   <action name="actionTrkTet">
    <property name="text">
     <string>TET...</string>
+   </property>
+  </action>
+  <action name="actionTrkScala">
+   <property name="text">
+    <string>Scala...</string>
    </property>
   </action>
  </widget>

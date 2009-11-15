@@ -35,6 +35,7 @@ public slots:
 	void addStandard();
 	void addDrums();
 	void addTet();
+	void addScala();
 
 private:
 	File *file_;

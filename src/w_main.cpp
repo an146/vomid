@@ -26,6 +26,7 @@ WMain::WMain(Player *_player)
 	WFILE_ACTION(TrkStandard, addStandard());
 	WFILE_ACTION(TrkDrums, addDrums());
 	WFILE_ACTION(TrkTet, addTet());
+	WFILE_ACTION(TrkScala, addScala());
 
 	STDICON(New,     SP_FileIcon);
 	STDICON(Open,    SP_DialogOpenButton);
