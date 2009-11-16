@@ -177,7 +177,7 @@ WPiano::r_time() const
 {
 	QWidget *viewport = qobject_cast<QWidget *>(parent());
 	if (viewport == NULL)
-		return width();
+		return x2time(width());
 	QPoint p = mapFrom(viewport, viewport->geometry().bottomRight());
 	return x2time(p.x());
 }
