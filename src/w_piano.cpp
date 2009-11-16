@@ -132,12 +132,6 @@ WPiano::WPiano(File *_file, vmd_track_t *_track, vmd_time_t time, Player *_playe
 		playStarted();
 }
 
-int
-WPiano::time2x(vmd_time_t time) const
-{
-	return time * quarter_width / (signed)file()->division;
-}
-
 vmd_time_t
 WPiano::x2time(int x) const
 {
@@ -145,25 +139,13 @@ WPiano::x2time(int x) const
 }
 
 int
-WPiano::level2y(int level) const
+WPiano::time2x(vmd_time_t time) const
 {
-	return height() - (margin + level_height * level);
-}
-
-vmd_pitch_t
-WPiano::cursor_pitch() const
-{
-	return level2pitch(track(), cursor_level_);
-}
-
-bool
-WPiano::playing() const
-{
-	return player_->file() == file();
+	return time * quarter_width / (signed)file()->division;
 }
 
 vmd_time_t
-WPiano::x_time() const
+WPiano::l_time() const
 {
 	QWidget *viewport = qobject_cast<QWidget *>(parent());
 	if (viewport == NULL)
@@ -180,6 +162,25 @@ WPiano::r_time() const
 		return x2time(width());
 	QPoint p = mapFrom(viewport, viewport->geometry().bottomRight());
 	return x2time(p.x());
+}
+
+int
+WPiano::y2level(int y) const
+{
+	float flevel = float(height() - margin - y) / level_height;
+	return int(flevel + 0.5f);
+}
+
+int
+WPiano::level2y(int level) const
+{
+	return height() - (margin + level_height * level);
+}
+
+vmd_pitch_t
+WPiano::cursor_pitch() const
+{
+	return level2pitch(track(), cursor_level_);
 }
 
 void
@@ -298,8 +299,7 @@ WPiano::mouseMoveEvent(QMouseEvent *ev)
 	clipCursor();
 
 	cursor_time_ = grid_snap_left(this, x2time(ev->x()));
-	float flevel = float(height() - margin - ev->y()) / level_height;
-	cursor_level_ = int(flevel + 0.5f);
+	cursor_level_ = y2level(ev->y());
 	update();
 
 	look_at_cursor(MINSCROLL);
@@ -513,7 +513,7 @@ WPiano::look_at_cursor(LookMode mode)
 void
 WPiano::adjust_y()
 {
-	cursor_level_ = avg_level(track(), x_time(), r_time());
+	cursor_level_ = avg_level(track(), l_time(), r_time());
 	look_at_cursor(CENTER);
 }
 
@@ -533,6 +533,12 @@ WPiano::toggle_note()
 		file()->commit("Erase Notes");
 }
 
+bool
+WPiano::playing() const
+{
+	return player_->file() == file();
+}
+
 void
 WPiano::playStarted()
 {
@@ -550,7 +556,7 @@ WPiano::playUpdate()
 		return;
 	vmd_time_t prev_time = cursor_time_;
 	cursor_time_ = player_->time();
-	if (x_time() <= prev_time && prev_time <= r_time())
+	if (l_time() <= prev_time && prev_time <= r_time())
 		look_at_cursor();
 	update();
 }

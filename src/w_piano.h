@@ -20,19 +20,22 @@ class WPiano : public QWidget
 public:
 	WPiano(File *, vmd_track_t *, vmd_time_t, Player *);
 
-	int level2y(int) const;
-	int time2x(vmd_time_t) const;
+	/* time <-> X coord conversion */
 	vmd_time_t x2time(int) const;
-	vmd_pitch_t cursor_pitch() const;
-	bool playing() const;
-	vmd_time_t x_time() const;
+	int time2x(vmd_time_t) const;
+	vmd_time_t l_time() const;
 	vmd_time_t r_time() const;
 
-	int grid_size() const { return grid_size_; }
+	/* time <-> Y coord conversion */
+	int y2level(int) const;
+	int level2y(int) const;
+
+	vmd_time_t grid_size() const   { return grid_size_; }
 	vmd_time_t cursor_time() const { return cursor_time_; }
 	vmd_time_t cursor_size() const { return cursor_size_; }
 	vmd_time_t cursor_x() const    { return cursor_time_; }
 	vmd_time_t cursor_r() const    { return cursor_time_ + cursor_size_; }
+	vmd_pitch_t cursor_pitch() const;
 
 	vmd_track_t *track() const { return track_; }
 	File *file() const { return file_; }
@@ -40,6 +43,7 @@ public:
 
 	void adjust_y();
 	void toggle_note();
+	bool playing() const;
 
 protected:
 	void focusOutEvent(QFocusEvent *);
@@ -67,7 +71,7 @@ private:
 
 	File *file_;
 	vmd_track_t *track_;
-	int grid_size_;
+	vmd_time_t grid_size_;
 	bool mouse_captured_;
 
 	vmd_time_t cursor_time_, cursor_size_;

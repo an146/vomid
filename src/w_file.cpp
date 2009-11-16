@@ -42,10 +42,10 @@ cursor_time(const WPiano *p)
 {
 	if (p == NULL)
 		return 0;
-	else if (p->x_time() <= p->cursor_time() && p->cursor_time() < p->r_time())
+	else if (p->l_time() <= p->cursor_time() && p->cursor_time() < p->r_time())
 		return p->cursor_time();
 	else
-		return (p->x_time() + p->r_time()) / 2;
+		return (p->l_time() + p->r_time()) / 2;
 }
 
 void
