@@ -20,6 +20,8 @@ class WPiano : public QWidget
 public:
 	WPiano(File *, vmd_track_t *, vmd_time_t, Player *);
 
+	QRect viewport() const;
+
 	/* time <-> X coord conversion */
 	vmd_time_t x2time(int) const;
 	int time2x(vmd_time_t) const;
@@ -39,6 +41,7 @@ public:
 	void setCursorPos(vmd_time_t, int);
 	void setCursorTime(vmd_time_t t) { setCursorPos(t, cursor_level_); }
 	void setCursorLevel(int l) { setCursorPos(cursor_time_, l); }
+	vmd_note_t *noteAtCursor();
 
 	vmd_track_t *track() const { return track_; }
 	File *file() const { return file_; }

@@ -4,6 +4,7 @@
 #include <QPaintEvent>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QToolTip>
 #include "file.h"
 #include "player.h"
 #include "w_main.h"
@@ -133,6 +134,15 @@ WPiano::WPiano(File *_file, vmd_track_t *_track, vmd_time_t time, Player *_playe
 		playStarted();
 }
 
+QRect
+WPiano::viewport() const {
+	QWidget *w = qobject_cast<QWidget *>(parent());
+	if (w == NULL)
+		w = const_cast<WPiano *>(this);
+	QRect geom = w->geometry();
+	return QRect(mapFrom(w, geom.topLeft()), mapFrom(w, geom.bottomRight()));
+}
+
 vmd_time_t
 WPiano::x2time(int x) const
 {
@@ -148,21 +158,13 @@ WPiano::time2x(vmd_time_t time) const
 vmd_time_t
 WPiano::l_time() const
 {
-	QWidget *viewport = qobject_cast<QWidget *>(parent());
-	if (viewport == NULL)
-		return 0;
-	QPoint p = mapFrom(viewport, viewport->geometry().topLeft());
-	return x2time(p.x());
+	return x2time(viewport().left());
 }
 
 vmd_time_t
 WPiano::r_time() const
 {
-	QWidget *viewport = qobject_cast<QWidget *>(parent());
-	if (viewport == NULL)
-		return x2time(width());
-	QPoint p = mapFrom(viewport, viewport->geometry().bottomRight());
-	return x2time(p.x());
+	return x2time(viewport().right());
 }
 
 int
@@ -192,6 +194,24 @@ WPiano::setCursorPos(vmd_time_t time, int level)
 		cursor_level_ = level;
 		emit cursorMoved();
 	}
+}
+
+static void *
+pitch_filter(vmd_note_t *note, void *pitch)
+{
+	if (note->pitch == *(vmd_pitch_t *)pitch)
+		return note;
+	else
+		return NULL;
+}
+
+vmd_note_t *
+WPiano::noteAtCursor()
+{
+	vmd_pitch_t pitch = cursor_pitch();
+	if (pitch < 0)
+		return NULL;
+	return (vmd_note_t *)vmd_track_range(track(), cursor_l(), cursor_r(), pitch_filter, &pitch);
 }
 
 void
@@ -267,6 +287,18 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 	case Qt::Key_Return:
 		toggle_note();
 		break;
+	case Qt::Key_I:
+		if (mod == Qt::CTRL) {
+			vmd_note_t *note = noteAtCursor();
+			if (note == NULL)
+				break;
+			QPoint pos(time2x(cursor_time_), level2y(cursor_level_));
+			QString text = "Note: ";
+			text += "channel = "; text += QString::number(note->channel->number);
+			QToolTip::hideText();
+			QToolTip::showText(mapToGlobal(pos), text);
+		}
+		break;
 	default:
 		return QWidget::keyPressEvent(ev);
 	}
@@ -291,11 +323,9 @@ WPiano::clipCursor()
 {
 	if (!mouse_captured_)
 		return;
-	QWidget *viewport = qobject_cast<QWidget *>(parent());
-	if (viewport == NULL)
-		return;
-	QPoint p1 = viewport->mapToGlobal(viewport->geometry().topLeft());
-	QPoint p2 = viewport->mapToGlobal(viewport->geometry().bottomRight());
+	QRect v = viewport();
+	QPoint p1 = mapToGlobal(v.topLeft());
+	QPoint p2 = mapToGlobal(v.bottomRight());
 	int x = clipped(QCursor::pos().x(), p1.x(), p2.x());
 	int y = clipped(QCursor::pos().y(), p1.y(), p2.y());
 	QCursor::setPos(QPoint(x, y));
@@ -435,9 +465,9 @@ WPiano::capture_mouse(bool capture)
 
 	if (capture) {
 #ifdef Q_WS_WIN
-		QWidget *viewport = qobject_cast<QWidget *>(parent());
-		QPoint p1 = viewport->mapToGlobal(viewport->geometry().topLeft());
-		QPoint p2 = viewport->mapToGlobal(viewport->geometry().bottomRight());
+		QRect v = viewport();
+		QPoint p1 = mapToGlobal(v.topLeft());
+		QPoint p2 = mapToGlobal(v.bottomRight());
 		RECT rect = {p1.x(), p1.y(), p2.x(), p2.y()};
 		ClipCursor(&rect);
 
@@ -473,22 +503,21 @@ scroll_snap(WPiano *piano, int x, bool right = false)
 void
 WPiano::look_at_cursor(LookMode mode)
 {
-	QWidget *viewport = qobject_cast<QWidget *>(parent());
-	if (viewport == NULL)
+	QWidget *viewport_widget = qobject_cast<QWidget *>(parent());
+	if (viewport_widget == NULL)
 		return;
-	QScrollArea *scroll = qobject_cast<QScrollArea *>(viewport->parent());
+	QScrollArea *scroll = qobject_cast<QScrollArea *>(viewport_widget->parent());
 	if (scroll == NULL)
 		return;
 	QScrollBar *hs = scroll->horizontalScrollBar();
 	QScrollBar *vs = scroll->verticalScrollBar();
 
-	QPoint p1 = mapFrom(viewport, viewport->geometry().topLeft());
-	QPoint p2 = mapFrom(viewport, viewport->geometry().bottomRight());
+	QRect v = viewport();
 	int x1, x2, y1, y2;
 	x1 = time2x(cursor_time());
 	if (playing()) {
 		x2 = x1 + 1;
-		y1 = y2 = (p1.y() + p2.y()) / 2;
+		y1 = y2 = (v.left() + v.right()) / 2;
 	} else {
 		x2 = time2x(cursor_time_ + cursor_size());
 		y1 = level2y(cursor_level_ + 1);
@@ -497,13 +526,13 @@ WPiano::look_at_cursor(LookMode mode)
 
 	switch (mode) {
 	case PAGE:
-		if (x1 < p1.x())
-			hs->setValue(scroll_snap(this, x2 - viewport->width(), true));
-		if (x2 > p2.x())
+		if (x1 < v.left())
+			hs->setValue(scroll_snap(this, x2 - v.width(), true));
+		if (x2 > v.right())
 			hs->setValue(scroll_snap(this, x1 - 1));
-		if (y1 < p1.y())
-			vs->setValue(y2 - viewport->height() + level_height);
-		if (y2 > p2.y())
+		if (y1 < v.top())
+			vs->setValue(y2 - v.height() + level_height);
+		if (y2 > v.bottom())
 			vs->setValue(y1 - level_height);
 		break;
 	case MINSCROLL:
@@ -511,8 +540,8 @@ WPiano::look_at_cursor(LookMode mode)
 		scroll->ensureVisible(x2, y2, level_height, level_height);
 		break;
 	case CENTER:
-		hs->setValue((x1 + x2 - viewport->width()) / 2);
-		vs->setValue((y1 + y2 - viewport->height()) / 2);
+		hs->setValue((x1 + x2 - v.width()) / 2);
+		vs->setValue((y1 + y2 - v.height()) / 2);
 		break;
 	}
 }
