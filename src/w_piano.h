@@ -33,7 +33,7 @@ public:
 	vmd_time_t grid_size() const   { return grid_size_; }
 	vmd_time_t cursor_time() const { return cursor_time_; }
 	vmd_time_t cursor_size() const { return cursor_size_; }
-	vmd_time_t cursor_x() const    { return cursor_time_; }
+	vmd_time_t cursor_l() const    { return cursor_time_; }
 	vmd_time_t cursor_r() const    { return cursor_time_ + cursor_size_; }
 	vmd_pitch_t cursor_pitch() const;
 	void setCursorPos(vmd_time_t, int);

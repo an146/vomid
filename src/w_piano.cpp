@@ -530,9 +530,9 @@ WPiano::toggle_note()
 	vmd_pitch_t p = cursor_pitch();
 	if (p < 0)
 		return;
-	int erased = vmd_track_erase_range(track(), cursor_x(), cursor_r(), p, p + 1);
+	int erased = vmd_track_erase_range(track(), cursor_l(), cursor_r(), p, p + 1);
 	if (erased <= 0) {
-		vmd_track_insert(track(), cursor_time(), cursor_time() + cursor_size(), p);
+		vmd_track_insert(track(), cursor_l(), cursor_r(), p);
 		file()->commit("Insert Note");
 	} else if (erased == 1) {
 		file()->commit("Erase Note");
