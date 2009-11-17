@@ -36,6 +36,9 @@ public:
 	vmd_time_t cursor_x() const    { return cursor_time_; }
 	vmd_time_t cursor_r() const    { return cursor_time_ + cursor_size_; }
 	vmd_pitch_t cursor_pitch() const;
+	void setCursorPos(vmd_time_t, int);
+	void setCursorTime(vmd_time_t t) { setCursorPos(t, cursor_level_); }
+	void setCursorLevel(int l) { setCursorPos(cursor_time_, l); }
 
 	vmd_track_t *track() const { return track_; }
 	File *file() const { return file_; }
@@ -44,6 +47,9 @@ public:
 	void adjust_y();
 	void toggle_note();
 	bool playing() const;
+
+signals:
+	void cursorMoved();
 
 protected:
 	void focusOutEvent(QFocusEvent *);

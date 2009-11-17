@@ -123,6 +123,7 @@ WPiano::WPiano(File *_file, vmd_track_t *_track, vmd_time_t time, Player *_playe
 	setFocusPolicy(Qt::StrongFocus);
 	update_timer_.setInterval(10);
 
+	connect(this, SIGNAL(cursorMoved()), this, SLOT(update()));
 	connect(file_, SIGNAL(acted()), this, SLOT(update()));
 	connect(player_, SIGNAL(started()), this, SLOT(playStarted()));
 	connect(&update_timer_, SIGNAL(timeout()), this, SLOT(playUpdate()));
@@ -184,6 +185,16 @@ WPiano::cursor_pitch() const
 }
 
 void
+WPiano::setCursorPos(vmd_time_t time, int level)
+{
+	if (time != cursor_time_ || level != cursor_level_) {
+		cursor_time_ = time;
+		cursor_level_ = level;
+		emit cursorMoved();
+	}
+}
+
+void
 WPiano::focusOutEvent(QFocusEvent *)
 {
 	capture_mouse(false);
@@ -200,18 +211,18 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 		capture_mouse(false);
 		break;
 	case Qt::Key_Left:
-		cursor_time_ = grid_snap_left(this, cursor_time_ - 1);
+		setCursorTime(grid_snap_left(this, cursor_time_ - 1));
 		break;
 	case Qt::Key_Right:
-		cursor_time_ = grid_snap_right(this, cursor_time_ + 1);
+		setCursorTime(grid_snap_right(this, cursor_time_ + 1));
 		break;
 	case Qt::Key_Up:
 		if (cursor_level_ < levels(track()))
-			cursor_level_++;
+			setCursorLevel(cursor_level_ + 1);
 		break;
 	case Qt::Key_Down:
 		if (cursor_level_ > 0)
-			cursor_level_--;
+			setCursorLevel(cursor_level_ - 1);
 		break;
 	case Qt::Key_Space:
 		if (playing())
@@ -297,11 +308,7 @@ WPiano::mouseMoveEvent(QMouseEvent *ev)
 		return;
 
 	clipCursor();
-
-	cursor_time_ = grid_snap_left(this, x2time(ev->x()));
-	cursor_level_ = y2level(ev->y());
-	update();
-
+	setCursorPos(grid_snap_left(this, x2time(ev->x())), y2level(ev->y()));
 	look_at_cursor(MINSCROLL);
 }
 
@@ -555,16 +562,15 @@ WPiano::playUpdate()
 	if (!playing() || cursor_time_ == player_->time())
 		return;
 	vmd_time_t prev_time = cursor_time_;
-	cursor_time_ = player_->time();
+	setCursorTime(player_->time());
 	if (l_time() <= prev_time && prev_time <= r_time())
 		look_at_cursor();
-	update();
 }
 
 void
 WPiano::playStopped()
 {
 	update_timer_.stop();
-	cursor_time_ = grid_snap_left(this, cursor_time_);
+	setCursorTime(grid_snap_left(this, cursor_time_));
 	update();
 }
