@@ -18,6 +18,7 @@ const int margin = 50;
 const int level_height = 5;
 const int scroll_margin = 5;
 const int quarter_width = 50;
+const int update_freq = 10;
 
 static vmd_time_t
 grid_snap_left(WPiano *piano, vmd_time_t time)
@@ -122,13 +123,9 @@ WPiano::WPiano(File *_file, vmd_track_t *_track, vmd_time_t time, Player *_playe
 	setBackgroundRole(QPalette::Base);
 	setAutoFillBackground(true);
 	setFocusPolicy(Qt::StrongFocus);
-	update_timer_.setInterval(10);
 
-	connect(this, SIGNAL(cursorMoved()), this, SLOT(update()));
 	connect(file_, SIGNAL(acted()), this, SLOT(update()));
 	connect(player_, SIGNAL(started()), this, SLOT(playStarted()));
-	connect(&update_timer_, SIGNAL(timeout()), this, SLOT(playUpdate()));
-	connect(&update_timer_, SIGNAL(timeout()), this, SLOT(clipCursor()));
 	connect(player_, SIGNAL(finished()), this, SLOT(playStopped()));
 	if (playing())
 		playStarted();
@@ -186,12 +183,27 @@ WPiano::cursor_pitch() const
 	return level2pitch(track(), cursor_level_);
 }
 
+QRect
+WPiano::cursor_rect() const
+{
+	if (playing())
+		return QRect(time2x(cursor_time_), 0, 1, height());
+
+	int x1 = time2x(cursor_time_);
+	int x2 = time2x(cursor_time_ + cursor_size_);
+	int y1 = level2y(cursor_level_ + 1);
+	int y2 = level2y(cursor_level_ - 1);
+	return QRect(x1, y1, x2 - x1, y2 - y1);
+}
+
 void
 WPiano::setCursorPos(vmd_time_t time, int level)
 {
 	if (time != cursor_time_ || level != cursor_level_) {
+		update(cursor_rect().adjusted(-3, -3, 3, 3));
 		cursor_time_ = time;
 		cursor_level_ = level;
+		update(cursor_rect().adjusted(-3, -3, 3, 3));
 		emit cursorMoved();
 	}
 }
@@ -439,19 +451,30 @@ WPiano::paintEvent(QPaintEvent *ev)
 		int x = time2x(cursor_time_);
 		painter.drawLine(x, 0, x, height());
 	} else {
-		Qt::GlobalColor colors[3] = {
-			Qt::white, // not used
+		Qt::GlobalColor colors[2] = {
 			cursor_pitch() >= 0 ? Qt::red : Qt::lightGray,
 			Qt::black
 		};
-		for (int i = 1; i < 3; i++) {
-			int y1 = level2y(cursor_level_ + 1) - i;
-			int y2 = level2y(cursor_level_ - 1) + i;
-			int x1 = time2x(cursor_time_) - i;
-			int x2 = time2x(cursor_time_ + cursor_size_) + i;
+		QRect r = cursor_rect();
+		for (int i = 0; i < 2; i++) {
+			r.adjust(-1, -1, 1, 1);
 			painter.setPen(QColor(colors[i]));
-			painter.drawRect(x1, y1, x2 - x1, y2 - y1);
+			painter.drawRect(r);
 		}
+	}
+}
+
+void
+WPiano::timerEvent(QTimerEvent *ev)
+{
+	if (ev->timerId() == update_timer_.timerId()) {
+		if (playing() && cursor_time_ != player_->time()) {
+			vmd_time_t prev_time = cursor_time_;
+			setCursorTime(player_->time());
+			if (l_time() <= prev_time && prev_time <= r_time())
+				look_at_cursor();
+		} else if (mouse_captured_)
+			clipCursor();
 	}
 }
 
@@ -472,7 +495,7 @@ WPiano::capture_mouse(bool capture)
 		ClipCursor(&rect);
 
 		// be sure that cursor doesn't reach the clip boundary
-		update_timer_.start();
+		update_timer_.start(update_freq, this);
 #else
 		grabMouse();
 #endif
@@ -580,20 +603,8 @@ WPiano::playStarted()
 {
 	if (playing()) {
 		capture_mouse(false);
-		update_timer_.start();
-		playUpdate();
+		update_timer_.start(update_freq, this);
 	}
-}
-
-void
-WPiano::playUpdate()
-{
-	if (!playing() || cursor_time_ == player_->time())
-		return;
-	vmd_time_t prev_time = cursor_time_;
-	setCursorTime(player_->time());
-	if (l_time() <= prev_time && prev_time <= r_time())
-		look_at_cursor();
 }
 
 void

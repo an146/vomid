@@ -6,7 +6,7 @@
 #define W_PIANO_H
 
 #include <QWidget>
-#include <QTimer>
+#include <QBasicTimer>
 #include <vomid.h>
 
 struct vmd_track_t;
@@ -38,6 +38,7 @@ public:
 	vmd_time_t cursor_l() const    { return cursor_time_; }
 	vmd_time_t cursor_r() const    { return cursor_time_ + cursor_size_; }
 	vmd_pitch_t cursor_pitch() const;
+	QRect cursor_rect() const;
 	void setCursorPos(vmd_time_t, int);
 	void setCursorTime(vmd_time_t t) { setCursorPos(t, cursor_level_); }
 	void setCursorLevel(int l) { setCursorPos(cursor_time_, l); }
@@ -60,6 +61,7 @@ protected:
 	void mouseMoveEvent(QMouseEvent *);
 	void mousePressEvent(QMouseEvent *);
 	void paintEvent(QPaintEvent *);
+	void timerEvent(QTimerEvent *);
 
 	enum LookMode {
 		PAGE,
@@ -71,12 +73,11 @@ protected:
 
 protected slots:
 	void playStarted();
-	void playUpdate();
 	void playStopped();
 	void clipCursor();
 
 private:
-	QTimer update_timer_;
+	QBasicTimer update_timer_;
 
 	File *file_;
 	vmd_track_t *track_;
