@@ -12,7 +12,6 @@ WTrack::WTrack(WFile *_wfile, int _idx)
 	:wfile(_wfile), idx(_idx)
 {
 	ui->setupUi(this);
-	update_track();
 	if (program_menu == NULL) {
 		program_menu = new QMenu();
 		for (int i = 0; i < VMD_PROGRAMS; i++) {
@@ -20,7 +19,7 @@ WTrack::WTrack(WFile *_wfile, int _idx)
 			act->setData(i);
 		}
 	}
-	ui->program->setMenu(program_menu);
+	update_track();
 	connect(ui->program, SIGNAL(triggered(QAction *)), this, SLOT(program_chosen(QAction *)));
 }
 
@@ -34,9 +33,11 @@ WTrack::update_track()
 	ui->name->setText(track->name);
 	if (track->chanmask == VMD_CHANMASK_DRUMS) {
 		ui->program->setText("DRUMS");
+		ui->program->setMenu(NULL);
 		ui->program->setEnabled(false);
 	} else {
 		ui->program->setText(vmd_gm_program_name[vmd_track_get_program(track)]);
+		ui->program->setMenu(program_menu);
 		ui->program->setEnabled(true);
 	}
 	ui->volume->setValue(track->value[VMD_TVALUE_VOLUME]);
