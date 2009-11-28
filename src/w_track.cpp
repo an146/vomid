@@ -53,5 +53,5 @@ void
 WTrack::program_chosen(QAction *act)
 {
 	vmd_track_set_program(wfile->file()->track[idx], act->data().toInt());
-	update_track();
+	wfile->file()->commit("Program Change");
 }
