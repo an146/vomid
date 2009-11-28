@@ -8,6 +8,8 @@
 #include <QFrame>
 #include "util.h"
 
+class QAction;
+class QMenu;
 class Ui_WTrack;
 class WFile;
 
@@ -21,11 +23,13 @@ public:
 
 public slots:
 	void open(bool);
+	void program_chosen(QAction *);
 
 private:
 	pimpl_ptr<Ui_WTrack> ui;
 	WFile *wfile;
 	int idx;
+	static QMenu *program_menu;
 };
 
 #endif /* W_TRACK_H */

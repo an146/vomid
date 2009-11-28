@@ -186,7 +186,7 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QToolButton" name="instr">
+       <widget class="QToolButton" name="program">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -200,6 +200,9 @@
         </property>
         <property name="text">
          <string>Instr Name</string>
+        </property>
+        <property name="popupMode">
+         <enum>QToolButton::InstantPopup</enum>
         </property>
         <property name="autoRaise">
          <bool>true</bool>
