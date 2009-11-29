@@ -555,17 +555,13 @@ WPiano::look_at_cursor(LookMode mode)
 	QScrollBar *hs = scroll->horizontalScrollBar();
 	QScrollBar *vs = scroll->verticalScrollBar();
 
+	bool pl = playing();
 	QRect v = viewport();
 	int x1, x2, y1, y2;
 	x1 = time2x(cursorTime());
-	if (playing()) {
-		x2 = x1 + 1;
-		y1 = y2 = (v.top() + v.bottom()) / 2;
-	} else {
-		x2 = time2x(cursorEndTime());
-		y1 = level2y(cursor_level_ + 1);
-		y2 = level2y(cursor_level_ - 1);
-	}
+	x2 = pl ? x1 + 1 : time2x(cursorEndTime());
+	y1 = level2y(cursor_level_ + 1);
+	y2 = level2y(cursor_level_ - 1);
 
 	switch (mode) {
 	case PAGE:
@@ -573,9 +569,9 @@ WPiano::look_at_cursor(LookMode mode)
 			hs->setValue(scroll_snap(this, x2 - v.width(), true));
 		if (x2 > v.right())
 			hs->setValue(scroll_snap(this, x1 - 1));
-		if (y1 < v.top())
+		if (pl && y1 < v.top())
 			vs->setValue(y2 - v.height() + level_height);
-		if (y2 > v.bottom())
+		if (pl && y2 > v.bottom())
 			vs->setValue(y1 - level_height);
 		break;
 	case MINSCROLL:

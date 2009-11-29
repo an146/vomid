@@ -37,22 +37,11 @@ WFile::track() const
 	return p ? p->track() : NULL;
 }
 
-static vmd_time_t
-cursor_time(const WPiano *p)
-{
-	if (p == NULL)
-		return 0;
-	else if (p->timeVisible(p->cursorTime()))
-		return p->cursorTime();
-	else
-		return p->x2time(p->viewport().center().x());
-}
-
 void
 WFile::open_track(vmd_track_t *track)
 {
 	WPiano *prev = piano();
-	vmd_time_t t = cursor_time(prev);
+	vmd_time_t t = prev ? prev->cursorTime() : 0;
 	int x = ui->scroll_area->horizontalScrollBar()->value();
 
 	WPiano *w = track ? new WPiano(file_, track, t, player_) : NULL;
