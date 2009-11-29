@@ -152,18 +152,6 @@ WPiano::time2x(vmd_time_t time) const
 	return time * quarter_width / (signed)file()->division;
 }
 
-vmd_time_t
-WPiano::l_time() const
-{
-	return x2time(viewport().left());
-}
-
-vmd_time_t
-WPiano::r_time() const
-{
-	return x2time(viewport().right());
-}
-
 int
 WPiano::y2level(int y) const
 {
@@ -177,33 +165,65 @@ WPiano::level2y(int level) const
 	return height() - (margin + level_height * level);
 }
 
+QRect
+WPiano::rect2qrect(const Rect &rect) const
+{
+	int l = time2x(rect.time_beg);
+	int r = time2x(rect.time_end);
+	int t = level2y(rect.level_end);
+	int b = level2y(rect.level_beg);
+	return QRect(l, t, r-l, b-t);
+}
+
+WPiano::Rect
+WPiano::qrect2rect(const QRect &qrect) const
+{
+	Rect ret = {
+		x2time(qrect.left()),
+		x2time(qrect.left() + qrect.width()),
+		y2level(qrect.top() + qrect.height()),
+		y2level(qrect.top())
+	};
+	return ret;
+}
+
+bool
+WPiano::timeVisible(vmd_time_t t) const
+{
+	Rect vp = qrect2rect(viewport());
+	return vp.time_beg <= t && t < vp.time_end;
+}
+
 vmd_pitch_t
-WPiano::cursor_pitch() const
+WPiano::cursorPitch() const
 {
 	return level2pitch(track(), cursor_level_);
 }
 
 QRect
-WPiano::cursor_rect() const
+WPiano::cursor_qrect() const
 {
 	if (playing())
 		return QRect(time2x(cursor_time_), 0, 1, height());
-
-	int x1 = time2x(cursor_time_);
-	int x2 = time2x(cursor_time_ + cursor_size_);
-	int y1 = level2y(cursor_level_ + 1);
-	int y2 = level2y(cursor_level_ - 1);
-	return QRect(x1, y1, x2 - x1, y2 - y1);
+	else {
+		Rect rect = {
+			cursorTime(),
+			cursorEndTime(),
+			cursor_level_ - 1,
+			cursor_level_ + 1
+		};
+		return rect2qrect(rect).adjusted(-3, -3, 3, 3);
+	}
 }
 
 void
 WPiano::setCursorPos(vmd_time_t time, int level)
 {
 	if (time != cursor_time_ || level != cursor_level_) {
-		update(cursor_rect().adjusted(-3, -3, 3, 3));
+		update(cursor_qrect());
 		cursor_time_ = time;
 		cursor_level_ = level;
-		update(cursor_rect().adjusted(-3, -3, 3, 3));
+		update(cursor_qrect());
 		emit cursorMoved();
 	}
 }
@@ -220,10 +240,10 @@ pitch_filter(vmd_note_t *note, void *pitch)
 vmd_note_t *
 WPiano::noteAtCursor()
 {
-	vmd_pitch_t pitch = cursor_pitch();
+	vmd_pitch_t pitch = cursorPitch();
 	if (pitch < 0)
 		return NULL;
-	return (vmd_note_t *)vmd_track_range(track(), cursor_l(), cursor_r(), pitch_filter, &pitch);
+	return (vmd_note_t *)vmd_track_range(track(), cursorTime(), cursorEndTime(), pitch_filter, &pitch);
 }
 
 void
@@ -452,12 +472,12 @@ WPiano::paintEvent(QPaintEvent *ev)
 		painter.drawLine(x, 0, x, height());
 	} else {
 		Qt::GlobalColor colors[2] = {
-			cursor_pitch() >= 0 ? Qt::red : Qt::lightGray,
-			Qt::black
+			Qt::black,
+			cursorPitch() >= 0 ? Qt::red : Qt::lightGray
 		};
-		QRect r = cursor_rect();
+		QRect r = cursor_qrect();
 		for (int i = 0; i < 2; i++) {
-			r.adjust(-1, -1, 1, 1);
+			r.adjust(1, 1, -1, -1);
 			painter.setPen(QColor(colors[i]));
 			painter.drawRect(r);
 		}
@@ -471,7 +491,7 @@ WPiano::timerEvent(QTimerEvent *ev)
 		if (playing() && cursor_time_ != player_->time()) {
 			vmd_time_t prev_time = cursor_time_;
 			setCursorTime(player_->time());
-			if (l_time() <= prev_time && prev_time <= r_time())
+			if (timeVisible(prev_time))
 				look_at_cursor();
 		} else if (mouse_captured_)
 			clipCursor();
@@ -537,12 +557,12 @@ WPiano::look_at_cursor(LookMode mode)
 
 	QRect v = viewport();
 	int x1, x2, y1, y2;
-	x1 = time2x(cursor_time());
+	x1 = time2x(cursorTime());
 	if (playing()) {
 		x2 = x1 + 1;
 		y1 = y2 = (v.top() + v.bottom()) / 2;
 	} else {
-		x2 = time2x(cursor_time_ + cursor_size());
+		x2 = time2x(cursorEndTime());
 		y1 = level2y(cursor_level_ + 1);
 		y2 = level2y(cursor_level_ - 1);
 	}
@@ -572,19 +592,20 @@ WPiano::look_at_cursor(LookMode mode)
 void
 WPiano::adjust_y()
 {
-	cursor_level_ = avg_level(track(), l_time(), r_time());
+	Rect vp = qrect2rect(viewport());
+	cursor_level_ = avg_level(track(), vp.time_beg, vp.time_end);
 	look_at_cursor(CENTER);
 }
 
 void
 WPiano::toggle_note()
 {
-	vmd_pitch_t p = cursor_pitch();
+	vmd_pitch_t p = cursorPitch();
 	if (p < 0)
 		return;
-	int erased = vmd_track_erase_range(track(), cursor_l(), cursor_r(), p, p + 1);
+	int erased = vmd_track_erase_range(track(), cursorTime(), cursorEndTime(), p, p + 1);
 	if (erased <= 0) {
-		vmd_track_insert(track(), cursor_l(), cursor_r(), p);
+		vmd_track_insert(track(), cursorTime(), cursorEndTime(), p);
 		file()->commit("Insert Note");
 	} else if (erased == 1) {
 		file()->commit("Erase Note");

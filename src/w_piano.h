@@ -18,27 +18,31 @@ class WPiano : public QWidget
 	Q_OBJECT
 
 public:
+	struct Rect
+	{
+		vmd_time_t time_beg, time_end;
+		int level_beg, level_end;
+	};
+
 	WPiano(File *, vmd_track_t *, vmd_time_t, Player *);
 
 	QRect viewport() const;
 
-	/* time <-> X coord conversion */
+	/* coord conversion */
 	vmd_time_t x2time(int) const;
 	int time2x(vmd_time_t) const;
-	vmd_time_t l_time() const;
-	vmd_time_t r_time() const;
-
-	/* time <-> Y coord conversion */
 	int y2level(int) const;
 	int level2y(int) const;
+	QRect rect2qrect(const Rect &) const;
+	Rect qrect2rect(const QRect &) const;
+
+	bool timeVisible(vmd_time_t) const;
 
 	vmd_time_t grid_size() const   { return grid_size_; }
-	vmd_time_t cursor_time() const { return cursor_time_; }
-	vmd_time_t cursor_size() const { return cursor_size_; }
-	vmd_time_t cursor_l() const    { return cursor_time_; }
-	vmd_time_t cursor_r() const    { return cursor_time_ + cursor_size_; }
-	vmd_pitch_t cursor_pitch() const;
-	QRect cursor_rect() const;
+	vmd_time_t cursorTime() const { return cursor_time_; }
+	vmd_time_t cursorEndTime() const { return cursor_time_ + cursor_size_; }
+	vmd_time_t cursorSize() const { return cursor_size_; }
+	vmd_pitch_t cursorPitch() const;
 	void setCursorPos(vmd_time_t, int);
 	void setCursorTime(vmd_time_t t) { setCursorPos(t, cursor_level_); }
 	void setCursorLevel(int l) { setCursorPos(cursor_time_, l); }
@@ -70,6 +74,7 @@ protected:
 	};
 	void look_at_cursor(LookMode mode = PAGE);
 	void capture_mouse(bool capture = true);
+	QRect cursor_qrect() const;
 
 protected slots:
 	void playStarted();
