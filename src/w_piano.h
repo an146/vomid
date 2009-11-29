@@ -47,6 +47,7 @@ public:
 	void setCursorTime(vmd_time_t t) { setCursorPos(t, cursor_level_); }
 	void setCursorLevel(int l) { setCursorPos(cursor_time_, l); }
 	vmd_note_t *noteAtCursor();
+	Rect selectionRect() const;
 
 	vmd_track_t *track() const { return track_; }
 	File *file() const { return file_; }
@@ -75,6 +76,8 @@ protected:
 	void look_at_cursor(LookMode mode = PAGE);
 	void capture_mouse(bool capture = true);
 	QRect cursor_qrect() const;
+	void set_pivot();
+	void drop_pivot();
 
 protected slots:
 	void playStarted();
@@ -91,6 +94,10 @@ private:
 
 	vmd_time_t cursor_time_, cursor_size_;
 	int cursor_level_;
+
+	bool selection_enabled_;
+	vmd_time_t pivot_time_;
+	int pivot_level_;
 
 	Player *player_;
 };

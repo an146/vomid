@@ -115,6 +115,7 @@ WPiano::WPiano(File *_file, vmd_track_t *_track, vmd_time_t time, Player *_playe
 	cursor_time_(grid_snap_left(this, time)),
 	cursor_size_(file()->division),
 	cursor_level_(0),
+	selection_enabled_(false),
 	player_(_player)
 {
 	int w = time2x(vmd_file_length(file()));
@@ -149,6 +150,8 @@ WPiano::x2time(int x) const
 int
 WPiano::time2x(vmd_time_t time) const
 {
+	if (time == VMD_MAX_TIME)
+		return width();
 	return time * quarter_width / (signed)file()->division;
 }
 
@@ -217,6 +220,25 @@ WPiano::cursor_qrect() const
 }
 
 void
+WPiano::set_pivot()
+{
+	if (!selection_enabled_) {
+		pivot_time_ = cursor_time_;
+		pivot_level_ = cursor_level_;
+		selection_enabled_ = true;
+	}
+}
+
+void
+WPiano::drop_pivot()
+{
+	if (selection_enabled_) {
+		selection_enabled_ = false;
+		update();
+	}
+}
+
+void
 WPiano::setCursorPos(vmd_time_t time, int level)
 {
 	if (time != cursor_time_ || level != cursor_level_) {
@@ -224,6 +246,8 @@ WPiano::setCursorPos(vmd_time_t time, int level)
 		cursor_time_ = time;
 		cursor_level_ = level;
 		update(cursor_qrect());
+		if (selection_enabled_)
+			update();
 		emit cursorMoved();
 	}
 }
@@ -246,6 +270,33 @@ WPiano::noteAtCursor()
 	return (vmd_note_t *)vmd_track_range(track(), cursorTime(), cursorEndTime(), pitch_filter, &pitch);
 }
 
+WPiano::Rect
+WPiano::selectionRect() const
+{
+	Rect ret;
+
+	if (pivot_time_ == cursor_time_) {
+		ret.time_beg = 0;
+		ret.time_end = VMD_MAX_TIME;
+	} else {
+		ret.time_beg = std::min(pivot_time_, cursor_time_);
+		ret.time_end = std::max(pivot_time_, cursor_time_);
+	}
+
+	if (pivot_level_ < cursor_level_) {
+		ret.level_beg = pivot_level_;
+		ret.level_end = cursor_level_;
+	} else if (pivot_level_ > cursor_level_) {
+		ret.level_beg = cursor_level_ + 1;
+		ret.level_end = pivot_level_ + 1;
+	} else if (pivot_level_ == cursor_level_) {
+		ret.level_beg = -1000;
+		ret.level_end = levels(track()) + 1000;
+	}
+
+	return ret;
+}
+
 void
 WPiano::focusOutEvent(QFocusEvent *)
 {
@@ -258,25 +309,40 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 	int key = ev->key();
 	int mod = ev->modifiers() & (Qt::CTRL | Qt::SHIFT);
 
+#define SHIFT_SELECTS \
+	do { \
+		if (mod & Qt::SHIFT) { \
+			capture_mouse(false); \
+			set_pivot(); \
+		} else \
+			drop_pivot(); \
+	} while(0)
+
 	switch (key) {
 	case Qt::Key_Escape:
+		drop_pivot();
 		capture_mouse(false);
 		break;
 	case Qt::Key_Left:
+		SHIFT_SELECTS;
 		setCursorTime(grid_snap_left(this, cursor_time_ - 1));
 		break;
 	case Qt::Key_Right:
+		SHIFT_SELECTS;
 		setCursorTime(grid_snap_right(this, cursor_time_ + 1));
 		break;
 	case Qt::Key_Up:
+		SHIFT_SELECTS;
 		if (cursor_level_ < levels(track()))
 			setCursorLevel(cursor_level_ + 1);
 		break;
 	case Qt::Key_Down:
+		SHIFT_SELECTS;
 		if (cursor_level_ > 0)
 			setCursorLevel(cursor_level_ - 1);
 		break;
 	case Qt::Key_Space:
+		drop_pivot();
 		if (playing())
 			player_->stop();
 		else
@@ -317,6 +383,7 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 		break;
 	case Qt::Key_Enter:
 	case Qt::Key_Return:
+		drop_pivot();
 		toggle_note();
 		break;
 	case Qt::Key_I:
@@ -445,7 +512,18 @@ WPiano::paintEvent(QPaintEvent *ev)
 	vmd_time_t beg = x2time(ev->rect().left());
 	vmd_time_t end = x2time(ev->rect().right());
 
+	/* selection */
+	if (selection_enabled_) {
+		painter.setBrush(Qt::cyan);
+		painter.setPen(Qt::NoPen);
+
+		Rect sel = selectionRect();
+		sel.level_beg -= 1;
+		painter.drawRect(rect2qrect(sel));
+	}
+
 	/* vertical grid */
+	painter.setPen(QPen());
 	vmd_file_measures(file(), beg, end + 1, draw_measure, &painter);
 
 	/* horizontal grid */
@@ -479,6 +557,7 @@ WPiano::paintEvent(QPaintEvent *ev)
 		for (int i = 0; i < 2; i++) {
 			r.adjust(1, 1, -1, -1);
 			painter.setPen(QColor(colors[i]));
+			painter.setBrush(Qt::NoBrush);
 			painter.drawRect(r);
 		}
 	}
@@ -519,6 +598,7 @@ WPiano::capture_mouse(bool capture)
 #else
 		grabMouse();
 #endif
+		drop_pivot();
 		setCursor(Qt::BlankCursor);
 	} else {
 #ifdef Q_WS_WIN
