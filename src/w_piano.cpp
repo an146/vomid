@@ -540,7 +540,7 @@ WPiano::look_at_cursor(LookMode mode)
 	x1 = time2x(cursor_time());
 	if (playing()) {
 		x2 = x1 + 1;
-		y1 = y2 = (v.left() + v.right()) / 2;
+		y1 = y2 = (v.top() + v.bottom()) / 2;
 	} else {
 		x2 = time2x(cursor_time_ + cursor_size());
 		y1 = level2y(cursor_level_ + 1);
