@@ -37,6 +37,9 @@
       </property>
       <item>
        <widget class="QToolButton" name="n">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="styleSheet">
          <string>QToolButton {
 	padding: 0px;
@@ -76,6 +79,9 @@
         <property name="enabled">
          <bool>true</bool>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="styleSheet">
          <string>QToolButton {
 	padding: 0px;
@@ -112,6 +118,9 @@
       </property>
       <item>
        <widget class="QToolButton" name="solo">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="styleSheet">
          <string>QToolButton {
 	padding: 0px;
@@ -154,6 +163,9 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="styleSheet">
          <string>QToolButton {
 	padding: 0px;
@@ -192,6 +204,9 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="styleSheet">
          <string>QToolButton {
@@ -234,6 +249,9 @@
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="styleSheet">
          <string> QSlider::groove:horizontal {
