@@ -24,6 +24,7 @@ public:
 public slots:
 	void open(bool);
 	void program_chosen(QAction *);
+	void volume_set(int);
 
 private:
 	pimpl_ptr<Ui_WTrack> ui;

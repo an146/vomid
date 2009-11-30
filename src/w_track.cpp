@@ -21,6 +21,7 @@ WTrack::WTrack(WFile *_wfile, int _idx)
 	}
 	update_track();
 	connect(ui->program, SIGNAL(triggered(QAction *)), this, SLOT(program_chosen(QAction *)));
+	connect(ui->volume, SIGNAL(valueChanged(int)), this, SLOT(volume_set(int)));
 }
 
 void
@@ -40,7 +41,10 @@ WTrack::update_track()
 		ui->program->setMenu(program_menu);
 		ui->program->setEnabled(true);
 	}
+	ui->volume->blockSignals(true);
 	ui->volume->setValue(track->value[VMD_TVALUE_VOLUME]);
+	ui->volume->update();
+	ui->volume->blockSignals(false);
 }
 
 void
@@ -53,5 +57,12 @@ void
 WTrack::program_chosen(QAction *act)
 {
 	vmd_track_set_program(wfile->file()->track[idx], act->data().toInt());
-	wfile->file()->commit("Program Change");
+	wfile->file()->commit("Set Program");
+}
+
+void
+WTrack::volume_set(int v)
+{
+	wfile->file()->track[idx]->value[VMD_TVALUE_VOLUME] = v;
+	wfile->file()->commit("Set Volume");
 }
