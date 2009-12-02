@@ -20,6 +20,16 @@ const int scroll_margin = 5;
 const int quarter_width = 50;
 const int update_freq = 10;
 
+struct PianoPalette : public QPalette
+{
+	PianoPalette()
+	{
+		//setColor(Base, Qt::white);
+		//setColor(AlternateBase, QColor(0xE0, 0xFF, 0xE8));
+		setColor(Highlight, Qt::cyan);
+	}
+};
+
 static vmd_time_t
 grid_snap_left(WPiano *piano, vmd_time_t time)
 {
@@ -121,8 +131,7 @@ WPiano::WPiano(File *_file, vmd_track_t *_track, vmd_time_t time, Player *_playe
 	int w = time2x(vmd_file_length(file()));
 	int h = margin * 2 + level_height * levels(track());
 	setMinimumSize(w, h);
-	setBackgroundRole(QPalette::Base);
-	setAutoFillBackground(true);
+	setPalette(PianoPalette());
 	setFocusPolicy(Qt::StrongFocus);
 
 	connect(file_, SIGNAL(acted()), this, SLOT(update()));
@@ -512,9 +521,19 @@ WPiano::paintEvent(QPaintEvent *ev)
 	vmd_time_t beg = x2time(ev->rect().left());
 	vmd_time_t end = x2time(ev->rect().right());
 
+	/* background */
+	painter.setPen(Qt::NoPen);
+	painter.setBrush(palette().base());
+	painter.drawRect(0, 0, width(), level2y(levels(track())));
+	painter.drawRect(0, level2y(0), width(), height() - level2y(0));
+	for (int i = 0; i < (levels(track()) + 1) / 2; i++) {
+		painter.setBrush(i % 2 == 0 ? palette().alternateBase() : palette().base());
+		painter.drawRect(0, level2y(i*2+2), width(), level2y(i*2) - level2y(i*2+2));
+	}
+
 	/* selection */
 	if (selection_enabled_) {
-		painter.setBrush(Qt::cyan);
+		painter.setBrush(palette().highlight());
 		painter.setPen(Qt::NoPen);
 
 		Rect sel = selectionRect();
