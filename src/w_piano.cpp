@@ -113,7 +113,7 @@ avg_level(vmd_track_t *track, vmd_time_t beg, vmd_time_t end)
 		levels(track),
 		0
 	};
-	vmd_track_range(track, beg, end, avg_note_clb, &arg);
+	vmd_track_for_range(track, beg, end, avg_note_clb, &arg);
 	return (arg.min + arg.max) / 2;
 }
 
@@ -261,22 +261,13 @@ WPiano::setCursorPos(vmd_time_t time, int level)
 	}
 }
 
-static void *
-pitch_filter(vmd_note_t *note, void *pitch)
-{
-	if (note->pitch == *(vmd_pitch_t *)pitch)
-		return note;
-	else
-		return NULL;
-}
-
 vmd_note_t *
 WPiano::noteAtCursor()
 {
-	vmd_pitch_t pitch = cursorPitch();
-	if (pitch < 0)
+	vmd_pitch_t p = cursorPitch();
+	if (p < 0)
 		return NULL;
-	return (vmd_note_t *)vmd_track_range(track(), cursorTime(), cursorEndTime(), pitch_filter, &pitch);
+	return (vmd_note_t *)vmd_track_range(track(), cursorTime(), cursorEndTime(), p, p + 1);
 }
 
 WPiano::Rect
@@ -560,7 +551,7 @@ WPiano::paintEvent(QPaintEvent *ev)
 	pen.setWidth(level_height - 1);
 	pen.setCapStyle(Qt::FlatCap);
 	painter.setPen(pen);
-	vmd_track_range(track(), beg, end, draw_note, &painter);
+	vmd_track_for_range(track(), beg, end, draw_note, &painter);
 
 	/* cursor */
 	if (playing()) {
@@ -698,7 +689,7 @@ WPiano::toggle_note()
 	vmd_pitch_t p = cursorPitch();
 	if (p < 0)
 		return;
-	int erased = vmd_track_erase_range(track(), cursorTime(), cursorEndTime(), p, p + 1);
+	int erased = vmd_erase_notes(vmd_track_range(track(), cursorTime(), cursorEndTime(), p, p + 1));
 	if (erased <= 0) {
 		vmd_track_insert(track(), cursorTime(), cursorEndTime(), p);
 		file()->commit("Insert Note");
