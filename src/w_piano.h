@@ -48,6 +48,7 @@ public:
 	void setCursorLevel(int l) { setCursorPos(cursor_time_, l); }
 	vmd_note_t *noteAtCursor();
 	Rect selectionRect() const;
+	vmd_note_t *selection() const;
 
 	vmd_track_t *track() const { return track_; }
 	File *file() const { return file_; }

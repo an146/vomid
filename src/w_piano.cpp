@@ -14,6 +14,11 @@
 #include <windows.h>
 #endif
 
+static File clipboard_file;
+static vmd_track_t *clipboard = NULL;
+static bool clipboard_time_relative;
+static bool clipboard_pitch_relative;
+
 const int margin = 50;
 const int level_height = 5;
 const int scroll_margin = 5;
@@ -73,19 +78,32 @@ levels(const vmd_track_t *track)
 	return pitch2level(track, track->notesystem.end_pitch);
 }
 
+//TODO: refactor
 static vmd_pitch_t
-level2pitch(const vmd_track_t *track, int level)
+level2pitch(const vmd_track_t *track, int level, bool round_up = false)
 {
-	if (level < 0 || level >= levels(track))
-		return -1;
+	if (level < 0)
+		return round_up ? 0 : -1;
+	if (level >= levels(track))
+		return round_up ? VMD_MAX_PITCH : -1;
 	const vmd_notesystem_t *ns = &track->notesystem;
 	int octaves = level / (vmd_notesystem_levels(ns) + 1);
 	level %= (vmd_notesystem_levels(ns) + 1);
-	if (level == 0)
-		return -1;
-	vmd_pitch_t octave_pitch = vmd_notesystem_level2pitch(ns, level - 1);
-	if (octave_pitch < 0)
-		return -1;
+
+	vmd_pitch_t octave_pitch;
+	if (level == 0) {
+		if (round_up)
+			octave_pitch = 0;
+		else
+			return -1;
+	} else {
+		while ((octave_pitch = vmd_notesystem_level2pitch(ns, level - 1)) < 0) {
+			if (round_up)
+				level++;
+			else
+				return -1;
+		}
+	}
 	return octaves * ns->size + octave_pitch;
 }
 
@@ -182,8 +200,8 @@ WPiano::rect2qrect(const Rect &rect) const
 {
 	int l = time2x(rect.time_beg);
 	int r = time2x(rect.time_end);
-	int t = level2y(rect.level_end);
-	int b = level2y(rect.level_beg);
+	int t = rect.level_end > levels(track()) ? 0 : level2y(rect.level_end);
+	int b = rect.level_end > levels(track()) ? height() : level2y(rect.level_beg);
 	return QRect(l, t, r-l, b-t);
 }
 
@@ -290,11 +308,20 @@ WPiano::selectionRect() const
 		ret.level_beg = cursor_level_ + 1;
 		ret.level_end = pivot_level_ + 1;
 	} else if (pivot_level_ == cursor_level_) {
-		ret.level_beg = -1000;
-		ret.level_end = levels(track()) + 1000;
+		ret.level_beg = 0;
+		ret.level_end = levels(track()) + 1;
 	}
 
 	return ret;
+}
+
+vmd_note_t *
+WPiano::selection() const
+{
+	Rect r = selectionRect();
+	vmd_pitch_t p_beg = level2pitch(track(), r.level_beg, true);
+	vmd_pitch_t p_end = level2pitch(track(), r.level_end, true);
+	return vmd_track_range(track(), r.time_beg, r.time_end, p_beg, p_end);
 }
 
 void
@@ -398,6 +425,42 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 			QToolTip::showText(mapToGlobal(pos), text);
 		}
 		break;
+	case Qt::Key_C:
+		if (mod == Qt::CTRL) {
+			if (clipboard == NULL)
+				clipboard = vmd_track_create(&clipboard_file, VMD_CHANMASK_ALL);
+
+			Rect s = selectionRect();
+			vmd_time_t base_time = s.time_beg;
+			int base_pitch = level2pitch(track(), s.level_beg, true);
+
+			clipboard_time_relative = s.time_end != VMD_MAX_TIME;
+			clipboard_pitch_relative = s.level_end <= levels(track());
+			vmd_track_clear(clipboard);
+			for (vmd_note_t *i = selection(); i != NULL; i = i->next)
+				vmd_copy_note(i, clipboard, -base_time, -base_pitch);
+		}
+		break;
+	case Qt::Key_V:
+		if (mod == Qt::CTRL) {
+			vmd_time_t t = clipboard_time_relative ? cursorTime() : 0;
+			vmd_pitch_t p = clipboard_pitch_relative ? cursorPitch() : 0;
+			if (clipboard == NULL || p < 0)
+				break;
+
+			for (vmd_bst_node_t *i = vmd_bst_begin(&clipboard->notes);
+					i != vmd_bst_end(&clipboard->notes); i = vmd_bst_next(i)) {
+				vmd_copy_note(vmd_track_note(i), track(), t, p);
+			}
+			file()->commit("Paste Notes");
+			drop_pivot();
+		}
+		break;
+	case Qt::Key_Delete:
+		for (vmd_note_t *i = selection(); i != NULL; i = i->next)
+			vmd_erase_note(i);
+		file()->commit("Erase Notes");
+		drop_pivot();
 	default:
 		return QWidget::keyPressEvent(ev);
 	}
