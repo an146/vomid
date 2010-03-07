@@ -22,6 +22,16 @@ public:
 	{
 		vmd_time_t time_beg, time_end;
 		int level_beg, level_end;
+
+		Rect() : time_beg(0), time_end(0), level_beg(0), level_end(0) { }
+
+		Rect(vmd_time_t _time_beg, vmd_time_t _time_end, int _level_beg, int _level_end)
+			: time_beg(_time_beg),
+			time_end(_time_end),
+			level_beg(_level_beg),
+			level_end(_level_end)
+		{
+		}
 	};
 
 	WPiano(File *, vmd_track_t *, vmd_time_t, Player *);
@@ -47,8 +57,8 @@ public:
 	void setCursorTime(vmd_time_t t) { setCursorPos(t, cursor_level_); }
 	void setCursorLevel(int l) { setCursorPos(cursor_time_, l); }
 	vmd_note_t *noteAtCursor();
-	Rect selectionRect() const;
-	vmd_note_t *selection() const;
+	Rect selectionRect(bool returnAllIfEmpty = false) const;
+	vmd_note_t *selection(bool returnAllIfEmpty = false) const;
 
 	vmd_track_t *track() const { return track_; }
 	File *file() const { return file_; }

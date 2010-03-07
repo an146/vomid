@@ -208,12 +208,12 @@ WPiano::rect2qrect(const Rect &rect) const
 WPiano::Rect
 WPiano::qrect2rect(const QRect &qrect) const
 {
-	Rect ret = {
+	Rect ret(
 		x2time(qrect.left()),
 		x2time(qrect.left() + qrect.width()),
 		y2level(qrect.top() + qrect.height()),
 		y2level(qrect.top())
-	};
+	);
 	return ret;
 }
 
@@ -236,12 +236,12 @@ WPiano::cursor_qrect() const
 	if (playing())
 		return QRect(time2x(cursor_time_), 0, 1, height());
 	else {
-		Rect rect = {
+		Rect rect(
 			cursorTime(),
 			cursorEndTime(),
 			cursor_level_ - 1,
 			cursor_level_ + 1
-		};
+		);
 		return rect2qrect(rect).adjusted(-3, -3, 3, 3);
 	}
 }
@@ -289,11 +289,14 @@ WPiano::noteAtCursor()
 }
 
 WPiano::Rect
-WPiano::selectionRect() const
+WPiano::selectionRect(bool returnAllIfEmpty) const
 {
 	Rect ret;
 
-	if (pivot_time_ == cursor_time_) {
+	if (!returnAllIfEmpty && (!selection_enabled_ || (pivot_time_ == cursor_time_ && pivot_level_ == cursor_level_)))
+		return ret;
+
+	if (!selection_enabled_ || pivot_time_ == cursor_time_) {
 		ret.time_beg = 0;
 		ret.time_end = VMD_MAX_TIME;
 	} else {
@@ -301,24 +304,24 @@ WPiano::selectionRect() const
 		ret.time_end = std::max(pivot_time_, cursor_time_);
 	}
 
-	if (pivot_level_ < cursor_level_) {
+	if (!selection_enabled_ || pivot_level_ == cursor_level_) {
+		ret.level_beg = 0;
+		ret.level_end = levels(track()) + 1;
+	} else if (pivot_level_ < cursor_level_) {
 		ret.level_beg = pivot_level_;
 		ret.level_end = cursor_level_;
 	} else if (pivot_level_ > cursor_level_) {
 		ret.level_beg = cursor_level_ + 1;
 		ret.level_end = pivot_level_ + 1;
-	} else if (pivot_level_ == cursor_level_) {
-		ret.level_beg = 0;
-		ret.level_end = levels(track()) + 1;
 	}
 
 	return ret;
 }
 
 vmd_note_t *
-WPiano::selection() const
+WPiano::selection(bool returnAllIfEmpty) const
 {
-	Rect r = selectionRect();
+	Rect r = selectionRect(returnAllIfEmpty);
 	vmd_pitch_t p_beg = level2pitch(track(), r.level_beg, true);
 	vmd_pitch_t p_end = level2pitch(track(), r.level_end, true);
 	return vmd_track_range(track(), r.time_beg, r.time_end, p_beg, p_end);
