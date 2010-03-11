@@ -353,6 +353,14 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 		drop_pivot();
 		capture_mouse(false);
 		break;
+	case Qt::Key_Home:
+		SHIFT_SELECTS;
+		setCursorTime(0);
+		break;
+	case Qt::Key_End:
+		SHIFT_SELECTS;
+		setCursorTime(grid_snap_right(this, vmd_track_length(track_)));
+		break;
 	case Qt::Key_Left:
 		SHIFT_SELECTS;
 		setCursorTime(grid_snap_left(this, cursor_time_ - 1));
