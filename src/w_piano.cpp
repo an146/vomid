@@ -472,6 +472,22 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 			vmd_erase_note(i);
 		file()->commit("Erase Notes");
 		drop_pivot();
+	case Qt::Key_T:
+		if (mod == Qt::CTRL) {
+			int dPitch = QInputDialog::getInt(
+				this,
+				"vomid",
+				QString("Transpose (in semi-tones):")
+			);
+			if (dPitch == 0)
+				break;
+			for (vmd_note_t *i = selection(), *next; i != NULL; i = next) {
+				next = i->next;
+				vmd_copy_note(i, track(), 0, dPitch);
+				vmd_erase_note(i);
+			}
+			file()->commit("Transpose");
+		}
 	default:
 		return QWidget::keyPressEvent(ev);
 	}
