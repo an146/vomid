@@ -13,6 +13,7 @@ class Player;
 class SlotProxy;
 class Ui_WMain;
 class WFile;
+class QSignalMapper;
 
 class WMain : public QMainWindow
 {
@@ -20,6 +21,7 @@ class WMain : public QMainWindow
 
 public:
 	WMain(Player *);
+	void add_output_device(const char *id, const char *name);
 	void open(File *);
 	File *file();
 	WFile *wfile();
@@ -39,6 +41,7 @@ protected:
 private:
 	pimpl_ptr<Ui_WMain> ui;
 	pimpl_ptr<SlotProxy> file_proxy, wfile_proxy;
+	pimpl_ptr<QSignalMapper> device_mapper;
 	Player *player;
 };
 

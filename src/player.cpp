@@ -59,6 +59,12 @@ Player::stop()
 	file_ = NULL;
 }
 
+void
+Player::set_output_device(QString id)
+{
+	vmd_set_device(VMD_OUTPUT_DEVICE, id.toAscii().data());
+}
+
 struct Playing
 {
 	vmd_file_t *file;

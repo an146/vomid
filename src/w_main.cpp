@@ -2,7 +2,9 @@
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QSignalMapper>
 #include "file.h"
+#include "player.h"
 #include "slot_proxy.h"
 #include "ui_w_main.h"
 #include "w_main.h"
@@ -13,6 +15,12 @@
 #define WFILE_ACTION(a, s) ACTION(wfile_proxy, a, s)
 #define STDICON(a, i) ui->action##a->setIcon(QApplication::style()->standardIcon(QStyle::i))
 #define STDSHORTCUT(a) ui->action##a->setShortcut(QKeySequence::a)
+
+static void
+enum_clb(const char *id, const char *name, void *me)
+{
+	((WMain *)me)->add_output_device(id, name);
+}
 
 WMain::WMain(Player *_player)
 	:file_proxy(),
@@ -42,6 +50,16 @@ WMain::WMain(Player *_player)
 	STDSHORTCUT(Redo);
 
 	current_changed();
+	connect(&*device_mapper, SIGNAL(mapped(QString)), player, SLOT(set_output_device(QString)));
+	vmd_enum_devices(VMD_OUTPUT_DEVICE, enum_clb, this);
+}
+
+void
+WMain::add_output_device(const char *id, const char *name)
+{
+	QAction *act = ui->menuOutputDevices->addAction(QString(id) + QString("\t") + QString(name));
+	connect(act, SIGNAL(triggered()), device_mapper, SLOT(map()));
+	device_mapper->setMapping(act, QString(id));
 }
 
 void
