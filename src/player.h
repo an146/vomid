@@ -23,7 +23,10 @@ public:
 
 public slots:
 	void stop();
-	void set_output_device(QString id);
+	bool set_output_device(QString id);
+
+signals:
+	void outputDeviceSet(QString);
 
 protected:
 	void run();

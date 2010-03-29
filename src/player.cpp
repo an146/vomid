@@ -1,21 +1,12 @@
+#include <QAction>
 #include <QThread>
 #include <QTimer>
-#include <QDebug>
 #include "player.h"
-
-static void
-enum_clb(const char *id, const char *, void *)
-{
-	static int device_set = 0;
-	if (!device_set && vmd_set_device(VMD_OUTPUT_DEVICE, id) == VMD_OK)
-		device_set = 1;
-}
 
 Player::Player()
 	:file_(NULL),
 	stopping_(false)
 {
-	vmd_enum_devices(VMD_OUTPUT_DEVICE, enum_clb, NULL);
 	connect(this, SIGNAL(finished()), this, SLOT(stop()));
 }
 
@@ -59,10 +50,14 @@ Player::stop()
 	file_ = NULL;
 }
 
-void
+bool
 Player::set_output_device(QString id)
 {
-	vmd_set_device(VMD_OUTPUT_DEVICE, id.toAscii().data());
+	if (vmd_set_device(VMD_OUTPUT_DEVICE, id.toAscii().data()) == VMD_OK) {
+		emit outputDeviceSet(id);
+		return true;
+	} else
+		return false;
 }
 
 struct Playing

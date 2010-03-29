@@ -25,6 +25,7 @@ enum_clb(const char *id, const char *name, void *me)
 WMain::WMain(Player *_player)
 	:file_proxy(),
 	wfile_proxy(),
+	output_devices(this),
 	player(_player)
 {
 	ui->setupUi(this);
@@ -51,6 +52,7 @@ WMain::WMain(Player *_player)
 
 	current_changed();
 	connect(&*device_mapper, SIGNAL(mapped(QString)), player, SLOT(set_output_device(QString)));
+	connect(player, SIGNAL(outputDeviceSet(QString)), this, SLOT(output_device_set(QString)));
 	vmd_enum_devices(VMD_OUTPUT_DEVICE, enum_clb, this);
 }
 
@@ -58,8 +60,14 @@ void
 WMain::add_output_device(const char *id, const char *name)
 {
 	QAction *act = ui->menuOutputDevices->addAction(QString(id) + QString("\t") + QString(name));
+	act->setData(QString(id));
+	output_devices->addAction(act);
 	connect(act, SIGNAL(triggered()), device_mapper, SLOT(map()));
 	device_mapper->setMapping(act, QString(id));
+
+	static bool set = false;
+	if (!set && player->set_output_device(id))
+		set = true;
 }
 
 void
@@ -175,6 +183,19 @@ WMain::close_tab(int idx)
 	if (close)
 		ui->tabs->removeTab(idx);
 	return close;
+}
+
+void
+WMain::output_device_set(QString id)
+{
+	foreach (QAction *act, ui->menuOutputDevices->findChildren<QAction *>()) {
+		act->setCheckable(false);
+		act->setChecked(false);
+		if (act->data() == id) {
+			act->setCheckable(true);
+			act->setChecked(true);
+		}
+	}
 }
 
 void

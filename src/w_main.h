@@ -13,6 +13,7 @@ class Player;
 class SlotProxy;
 class Ui_WMain;
 class WFile;
+class QActionGroup;
 class QSignalMapper;
 
 class WMain : public QMainWindow
@@ -28,6 +29,7 @@ public:
 
 public slots:
 	bool close_tab(int = -1);
+	void output_device_set(QString);
 
 	void menu_new();
 	void menu_open();
@@ -41,6 +43,7 @@ protected:
 private:
 	pimpl_ptr<Ui_WMain> ui;
 	pimpl_ptr<SlotProxy> file_proxy, wfile_proxy;
+	pimpl_ptr<QActionGroup> output_devices;
 	pimpl_ptr<QSignalMapper> device_mapper;
 	Player *player;
 };
