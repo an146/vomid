@@ -12,11 +12,9 @@ set (SOURCES
 	src/w_track.cpp
 )
 
-set (HEADERS
+set (MOC_HEADERS
 	src/file.h
 	src/player.h
-	src/slot_proxy.h
-	src/util.h
 	src/w_file.h
 	src/w_main.h
 	src/w_piano.h
@@ -32,7 +30,7 @@ set (UIS
 find_package (Qt4 REQUIRED)
 include (${QT_USE_FILE})
 
-qt4_wrap_cpp (MOC_SOURCES ${HEADERS})
+qt4_wrap_cpp (MOC_SOURCES ${MOC_HEADERS})
 qt4_wrap_ui (UI_HEADERS ${UIS})
 include_directories (${PROJECT_BINARY_DIR} "libvomid/include")
 
