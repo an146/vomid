@@ -1,6 +1,7 @@
 #include <QCloseEvent>
 #include <QFileInfo>
 #include <QFileDialog>
+#include <QLabel>
 #include <QMessageBox>
 #include <QSignalMapper>
 #include "file.h"
@@ -37,6 +38,7 @@ WMain::WMain(Player *_player)
 	: pimpl(this)
 {
 	pimpl->ui.setupUi(this);
+	pimpl->ui.statusbar->addPermanentWidget(pimpl->ui.file_compatible);
 	pimpl->player = _player;
 
 	FILE_ACTION(Undo, undo());
@@ -238,6 +240,16 @@ WMain::current_changed()
 
 	/* Track */
 	pimpl->ui.menuTrack->setEnabled(f != NULL);
+
+	/* Status Bar */
+	QString file_status;
+	if (f == NULL)
+		file_status = "No file";
+	else if (vmd_file_is_compatible(f))
+		file_status = "Compatible";
+	else
+		file_status = "Non-compatible";
+	pimpl->ui.file_compatible->setText(file_status);
 }
 
 void
