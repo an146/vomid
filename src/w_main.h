@@ -10,11 +10,7 @@
 
 class File;
 class Player;
-class SlotProxy;
-class Ui_WMain;
 class WFile;
-class QActionGroup;
-class QSignalMapper;
 
 class WMain : public QMainWindow
 {
@@ -41,11 +37,8 @@ protected:
 	void closeEvent(QCloseEvent *);
 
 private:
-	pimpl_ptr<Ui_WMain> ui;
-	pimpl_ptr<SlotProxy> file_proxy, wfile_proxy;
-	pimpl_ptr<QActionGroup> output_devices;
-	pimpl_ptr<QSignalMapper> device_mapper;
-	Player *player;
+	struct Impl;
+	pimpl_ptr<Impl> pimpl;
 };
 
 #endif /* W_MAIN_H */

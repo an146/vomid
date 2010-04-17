@@ -10,11 +10,22 @@
 #include "w_main.h"
 #include "w_file.h"
 
-#define ACTION(p, a, s) p->connect(ui->action##a, SIGNAL(triggered()), SLOT(s))
-#define FILE_ACTION(a, s)  ACTION(file_proxy, a, s)
-#define WFILE_ACTION(a, s) ACTION(wfile_proxy, a, s)
-#define STDICON(a, i) ui->action##a->setIcon(QApplication::style()->standardIcon(QStyle::i))
-#define STDSHORTCUT(a) ui->action##a->setShortcut(QKeySequence::a)
+#define ACTION(p, a, s) p.connect(pimpl->ui.action##a, SIGNAL(triggered()), SLOT(s))
+#define FILE_ACTION(a, s)  ACTION(pimpl->file_proxy, a, s)
+#define WFILE_ACTION(a, s) ACTION(pimpl->wfile_proxy, a, s)
+#define STDICON(a, i) pimpl->ui.action##a->setIcon(QApplication::style()->standardIcon(QStyle::i))
+#define STDSHORTCUT(a) pimpl->ui.action##a->setShortcut(QKeySequence::a)
+
+struct WMain::Impl
+{
+	Ui_WMain ui;
+	SlotProxy file_proxy, wfile_proxy;
+	QActionGroup output_devices;
+	QSignalMapper device_mapper;
+	Player *player;
+
+	Impl(WMain *owner) : output_devices(owner) { }
+};
 
 static void
 enum_clb(const char *id, const char *name, void *me)
@@ -23,12 +34,10 @@ enum_clb(const char *id, const char *name, void *me)
 }
 
 WMain::WMain(Player *_player)
-	:file_proxy(),
-	wfile_proxy(),
-	output_devices(this),
-	player(_player)
+	: pimpl(this)
 {
-	ui->setupUi(this);
+	pimpl->ui.setupUi(this);
+	pimpl->player = _player;
 
 	FILE_ACTION(Undo, undo());
 	FILE_ACTION(Redo, redo());
@@ -51,30 +60,30 @@ WMain::WMain(Player *_player)
 	STDSHORTCUT(Redo);
 
 	current_changed();
-	connect(&*device_mapper, SIGNAL(mapped(QString)), player, SLOT(set_output_device(QString)));
-	connect(player, SIGNAL(outputDeviceSet(QString)), this, SLOT(output_device_set(QString)));
+	connect(&pimpl->device_mapper, SIGNAL(mapped(QString)), pimpl->player, SLOT(set_output_device(QString)));
+	connect(pimpl->player, SIGNAL(outputDeviceSet(QString)), this, SLOT(output_device_set(QString)));
 	vmd_enum_devices(VMD_OUTPUT_DEVICE, enum_clb, this);
 }
 
 void
 WMain::add_output_device(const char *id, const char *name)
 {
-	QAction *act = ui->menuOutputDevices->addAction(QString(id) + QString("\t") + QString(name));
+	QAction *act = pimpl->ui.menuOutputDevices->addAction(QString(id) + QString("\t") + QString(name));
 	act->setData(QString(id));
-	output_devices->addAction(act);
-	connect(act, SIGNAL(triggered()), device_mapper, SLOT(map()));
-	device_mapper->setMapping(act, QString(id));
+	pimpl->output_devices.addAction(act);
+	connect(act, SIGNAL(triggered()), &pimpl->device_mapper, SLOT(map()));
+	pimpl->device_mapper.setMapping(act, QString(id));
 
 	static bool set = false;
-	if (!set && player->set_output_device(id))
+	if (!set && pimpl->player->set_output_device(id))
 		set = true;
 }
 
 void
 WMain::open(File *f)
 {
-	WFile *wfile = new WFile(f, player, ui);
-	ui->tabs->setCurrentIndex(ui->tabs->addTab(wfile, ""));
+	WFile *wfile = new WFile(f, pimpl->player, &pimpl->ui);
+	pimpl->ui.tabs->setCurrentIndex(pimpl->ui.tabs->addTab(wfile, ""));
 	wfile->update_label();
 	connect(f, SIGNAL(acted()), this, SLOT(current_changed()));
 }
@@ -89,7 +98,7 @@ WMain::file()
 WFile *
 WMain::wfile()
 {
-	return qobject_cast<WFile *>(ui->tabs->currentWidget());
+	return qobject_cast<WFile *>(pimpl->ui.tabs->currentWidget());
 }
 
 void
@@ -152,11 +161,11 @@ bool
 WMain::close_tab(int idx)
 {
 	if (idx < 0) {
-		idx = ui->tabs->currentIndex();
+		idx = pimpl->ui.tabs->currentIndex();
 		if (idx < 0)
 			return false;
 	}
-	ui->tabs->setCurrentIndex(idx);
+	pimpl->ui.tabs->setCurrentIndex(idx);
 	File *f = file();
 	bool close = true;
 	if (!f->saved()) {
@@ -181,14 +190,14 @@ WMain::close_tab(int idx)
 		}
 	}
 	if (close)
-		ui->tabs->removeTab(idx);
+		pimpl->ui.tabs->removeTab(idx);
 	return close;
 }
 
 void
 WMain::output_device_set(QString id)
 {
-	foreach (QAction *act, ui->menuOutputDevices->findChildren<QAction *>()) {
+	foreach (QAction *act, pimpl->ui.menuOutputDevices->findChildren<QAction *>()) {
 		act->setCheckable(false);
 		act->setChecked(false);
 		if (act->data() == id) {
@@ -202,39 +211,39 @@ void
 WMain::current_changed()
 {
 	File *f = file();
-	file_proxy->setTarget(f);
-	wfile_proxy->setTarget(wfile());
+	pimpl->file_proxy.setTarget(f);
+	pimpl->wfile_proxy.setTarget(wfile());
 
 	/* File */
-	ui->actionSave->setEnabled(f && !f->saved());
-	ui->actionSaveAs->setEnabled(f != NULL);
-	ui->actionClose->setEnabled(f != NULL);
+	pimpl->ui.actionSave->setEnabled(f && !f->saved());
+	pimpl->ui.actionSaveAs->setEnabled(f != NULL);
+	pimpl->ui.actionClose->setEnabled(f != NULL);
 
 	/* Edit */
-	ui->menuEdit->setEnabled(f != NULL);
+	pimpl->ui.menuEdit->setEnabled(f != NULL);
 	if (f && f->revision()->prev() != NULL) {
-		ui->actionUndo->setText("Undo " + f->revision()->name());
-		ui->actionUndo->setEnabled(true);
+		pimpl->ui.actionUndo->setText("Undo " + f->revision()->name());
+		pimpl->ui.actionUndo->setEnabled(true);
 	} else {
-		ui->actionUndo->setText("Undo");
-		ui->actionUndo->setEnabled(false);
+		pimpl->ui.actionUndo->setText("Undo");
+		pimpl->ui.actionUndo->setEnabled(false);
 	}
 	if (f && f->revision()->next() != NULL) {
-		ui->actionRedo->setText("Redo " + f->revision()->next()->name());
-		ui->actionRedo->setEnabled(true);
+		pimpl->ui.actionRedo->setText("Redo " + f->revision()->next()->name());
+		pimpl->ui.actionRedo->setEnabled(true);
 	} else {
-		ui->actionRedo->setText("Redo");
-		ui->actionRedo->setEnabled(false);
+		pimpl->ui.actionRedo->setText("Redo");
+		pimpl->ui.actionRedo->setEnabled(false);
 	}
 
 	/* Track */
-	ui->menuTrack->setEnabled(f != NULL);
+	pimpl->ui.menuTrack->setEnabled(f != NULL);
 }
 
 void
 WMain::closeEvent(QCloseEvent *ev)
 {
-	while (ui->tabs->count() > 0) {
+	while (pimpl->ui.tabs->count() > 0) {
 		if (!close_tab(0)) {
 			ev->ignore();
 			return;
