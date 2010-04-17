@@ -14,6 +14,7 @@ WFile::WFile(File *_file, Player *_player, Ui_WMain *_main_ui)
 	player_(_player),
 	main_ui_(_main_ui)
 {
+	file_->setParent(this);
 	ui->setupUi(this);
 	ui->scroll_area->setFocusPolicy(Qt::NoFocus);
 	ui->scroll_area->horizontalScrollBar()->setFocusPolicy(Qt::NoFocus);
