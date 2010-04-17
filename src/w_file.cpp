@@ -58,8 +58,16 @@ void
 WFile::update_tracks()
 {
 	int i;
-	while (ui->tracks->count() > file()->tracks)
-		ui->tracks->removeItem(ui->tracks->itemAt(ui->tracks->count() - 1));
+	if (vmd_track_idx(track()) < 0) {
+		// WTF: doesn't work
+		// ui->scroll_area->setWidget(NULL);
+		delete piano();
+	}
+	while (ui->tracks->count() > file()->tracks) {
+		QLayoutItem *item = ui->tracks->itemAt(ui->tracks->count() - 1);
+		ui->tracks->removeItem(item);
+		delete item->widget();
+	}
 	for (i = 0; i < ui->tracks->count(); i++)
 		static_cast<WTrack *>(ui->tracks->itemAt(i)->widget())->update_track();
 	for (i = ui->tracks->count(); i < file()->tracks; i++)
