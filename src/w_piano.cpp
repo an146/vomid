@@ -459,10 +459,8 @@ WPiano::keyPressEvent(QKeyEvent *ev)
 			if (clipboard == NULL || p < 0)
 				break;
 
-			for (vmd_bst_node_t *i = vmd_bst_begin(&clipboard->notes);
-					i != vmd_bst_end(&clipboard->notes); i = vmd_bst_next(i)) {
+			VMD_BST_FOREACH(vmd_bst_node_t *i, &clipboard->notes)
 				vmd_copy_note(vmd_track_note(i), track(), t, p);
-			}
 			file()->commit("Paste Notes");
 			drop_pivot();
 		}
