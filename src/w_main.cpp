@@ -43,6 +43,7 @@ WMain::WMain(Player *_player)
 
 	FILE_ACTION(Undo, undo());
 	FILE_ACTION(Redo, redo());
+	WFILE_ACTION(Info, showInfo());
 	WFILE_ACTION(TrkStandard, addStandard());
 	WFILE_ACTION(TrkDrums, addDrums());
 	WFILE_ACTION(TrkTet, addTet());
@@ -220,6 +221,7 @@ WMain::current_changed()
 	pimpl->ui.actionSave->setEnabled(f && !f->saved());
 	pimpl->ui.actionSaveAs->setEnabled(f != NULL);
 	pimpl->ui.actionClose->setEnabled(f != NULL);
+	pimpl->ui.actionInfo->setEnabled(f != NULL);
 
 	/* Edit */
 	pimpl->ui.menuEdit->setEnabled(f != NULL);

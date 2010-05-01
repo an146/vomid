@@ -37,6 +37,8 @@ public slots:
 	void addTet();
 	void addScala();
 
+	void showInfo();
+
 private:
 	File *file_;
 	Player *player_;

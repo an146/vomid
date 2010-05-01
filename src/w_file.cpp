@@ -6,6 +6,7 @@
 #include "ui_w_file.h"
 #include "ui_w_main.h"
 #include "w_file.h"
+#include "w_file_info.h"
 #include "w_piano.h"
 #include "w_track.h"
 
@@ -125,4 +126,11 @@ WFile::addScala()
 		vmd_track_t *track = file()->add_track();
 		vmd_track_set_notesystem(track, ns);
 	}
+}
+
+void
+WFile::showInfo()
+{
+	WFileInfo *info = new WFileInfo(this);
+	info->show();
 }
