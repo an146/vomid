@@ -9,6 +9,7 @@
 #include "util.h"
 
 class File;
+class QTreeWidgetItem;
 class Ui_FileInfoDialog;
 class WFile;
 
@@ -20,6 +21,9 @@ public:
 	WFileInfo(WFile *);
 
 	File *file() const;
+
+public slots:
+	void channelsTreeItemDoubleClicked(QTreeWidgetItem *, int);
 
 private:
 	WFile *wfile_;
