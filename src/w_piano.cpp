@@ -143,7 +143,8 @@ WPiano::WPiano(File *_file, vmd_track_t *_track, vmd_time_t time, Player *_playe
 	cursor_time_(grid_snap_left(this, time)),
 	cursor_size_(file()->division),
 	cursor_level_(0),
-	selection_enabled_(false),
+	pivot_enabled_(false),
+	selection_(NULL),
 	player_(_player)
 {
 	int w = time2x(vmd_file_length(file()));
@@ -249,18 +250,19 @@ WPiano::cursor_qrect() const
 void
 WPiano::set_pivot()
 {
-	if (!selection_enabled_) {
+	if (!pivot_enabled_) {
+		setSelection(NULL);
 		pivot_time_ = cursor_time_;
 		pivot_level_ = cursor_level_;
-		selection_enabled_ = true;
+		pivot_enabled_ = true;
 	}
 }
 
 void
 WPiano::drop_pivot()
 {
-	if (selection_enabled_) {
-		selection_enabled_ = false;
+	if (pivot_enabled_) {
+		pivot_enabled_ = false;
 		update();
 	}
 }
@@ -273,7 +275,7 @@ WPiano::setCursorPos(vmd_time_t time, int level)
 		cursor_time_ = time;
 		cursor_level_ = level;
 		update(cursor_qrect());
-		if (selection_enabled_)
+		if (pivot_enabled_)
 			update();
 		emit cursorMoved();
 	}
@@ -293,10 +295,10 @@ WPiano::selectionRect(bool returnAllIfEmpty) const
 {
 	Rect ret;
 
-	if (!returnAllIfEmpty && (!selection_enabled_ || (pivot_time_ == cursor_time_ && pivot_level_ == cursor_level_)))
+	if (!returnAllIfEmpty && (!pivot_enabled_ || (pivot_time_ == cursor_time_ && pivot_level_ == cursor_level_)))
 		return ret;
 
-	if (!selection_enabled_ || pivot_time_ == cursor_time_) {
+	if (!pivot_enabled_ || pivot_time_ == cursor_time_) {
 		ret.time_beg = 0;
 		ret.time_end = VMD_MAX_TIME;
 	} else {
@@ -304,7 +306,7 @@ WPiano::selectionRect(bool returnAllIfEmpty) const
 		ret.time_end = std::max(pivot_time_, cursor_time_);
 	}
 
-	if (!selection_enabled_ || pivot_level_ == cursor_level_) {
+	if (!pivot_enabled_ || pivot_level_ == cursor_level_) {
 		ret.level_beg = 0;
 		ret.level_end = levels(track()) + 1;
 	} else if (pivot_level_ < cursor_level_) {
@@ -321,10 +323,24 @@ WPiano::selectionRect(bool returnAllIfEmpty) const
 vmd_note_t *
 WPiano::selection(bool returnAllIfEmpty) const
 {
-	Rect r = selectionRect(returnAllIfEmpty);
-	vmd_pitch_t p_beg = level2pitch(track(), r.level_beg, true);
-	vmd_pitch_t p_end = level2pitch(track(), r.level_end, true);
-	return vmd_track_range(track(), r.time_beg, r.time_end, p_beg, p_end);
+	if (pivot_enabled_) {
+		Rect r = selectionRect(returnAllIfEmpty);
+		vmd_pitch_t p_beg = level2pitch(track(), r.level_beg, true);
+		vmd_pitch_t p_end = level2pitch(track(), r.level_end, true);
+		return vmd_track_range(track(), r.time_beg, r.time_end, p_beg, p_end);
+	} else
+		return selection_;
+}
+
+void
+WPiano::setSelection(vmd_note_t *sel)
+{
+	VMD_BST_FOREACH(vmd_bst_node_t *i, &track_->notes)
+		vmd_track_note(i)->mark = 0;
+	pivot_enabled_ = false;
+	selection_ = sel;
+	for (vmd_note_t *i = selection_; i != NULL; i = i->next)
+		i->mark = 1;
 }
 
 void
@@ -566,6 +582,13 @@ draw_note(vmd_note_t *note, void *_painter)
 	QPainter *painter = static_cast<QPainter *>(_painter);
 	WPiano *piano = static_cast<WPiano *>(painter->device());
 
+	QPen pen;
+	pen.setWidth(level_height - 1);
+	pen.setCapStyle(Qt::FlatCap);
+	if (note->mark)
+		pen.setColor(Qt::blue);
+	painter->setPen(pen);
+
 	int level = pitch2level(piano->track(), note->pitch);
 	int y = piano->level2y(level);
 	int x1 = piano->time2x(note->on_time);
@@ -611,7 +634,7 @@ WPiano::paintEvent(QPaintEvent *ev)
 	}
 
 	/* selection */
-	if (selection_enabled_) {
+	if (pivot_enabled_) {
 		painter.setBrush(palette().highlight());
 		painter.setPen(Qt::NoPen);
 
@@ -636,9 +659,6 @@ WPiano::paintEvent(QPaintEvent *ev)
 	}
 
 	/* notes */
-	pen.setWidth(level_height - 1);
-	pen.setCapStyle(Qt::FlatCap);
-	painter.setPen(pen);
 	vmd_track_for_range(track(), beg, end, draw_note, &painter);
 
 	/* cursor */

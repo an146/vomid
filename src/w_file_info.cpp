@@ -1,7 +1,9 @@
+#include <vomid.h>
 #include "file.h"
 #include "ui_w_file_info.h"
 #include "w_file.h"
 #include "w_file_info.h"
+#include "w_piano.h"
 
 enum {
 	TYPE_TRACK = QTreeWidgetItem::UserType,
@@ -68,9 +70,19 @@ void WFileInfo::channelsTreeItemDoubleClicked(QTreeWidgetItem *item, int)
 {
 	if (item->type() == TYPE_TRACK) {
 		TrackItem *ti = static_cast<TrackItem *>(item);
-		wfile_->open_track(ti->track);
+		WPiano *piano = wfile_->open_track(ti->track);
+		piano->setSelection(NULL);
 	} else if (item->type() == TYPE_CHANNEL) {
 		ChannelItem *ci = static_cast<ChannelItem *>(item);
-		wfile_->open_track(ci->track);
+		WPiano *piano = wfile_->open_track(ci->track);
+		vmd_note_t *sel = NULL;
+		VMD_BST_FOREACH(vmd_bst_node_t *i, &ci->track->notes) {
+			vmd_note_t *n = vmd_track_note(i);
+			if (n->channel != ci->channel)
+				continue;
+			n->next = sel;
+			sel = n;
+		}
+		piano->setSelection(sel);
 	}
 }

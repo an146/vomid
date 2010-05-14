@@ -39,21 +39,25 @@ WFile::track() const
 	return p ? p->track() : NULL;
 }
 
-void
+WPiano *
 WFile::open_track(vmd_track_t *track)
 {
 	WPiano *prev = piano();
+	if (prev != NULL && prev->track() == track)
+		return prev;
+
 	vmd_time_t t = prev ? prev->cursorTime() : 0;
 	int x = ui->scroll_area->horizontalScrollBar()->value();
 
-	WPiano *w = track ? new WPiano(file_, track, t, player_) : NULL;
-	ui->scroll_area->setWidget(w);
-	if (w != NULL) {
-		w->setFocus(Qt::OtherFocusReason);
-		w->adjust_y();
+	WPiano *piano = track ? new WPiano(file_, track, t, player_) : NULL;
+	ui->scroll_area->setWidget(piano);
+	if (piano != NULL) {
+		piano->setFocus(Qt::OtherFocusReason);
+		piano->adjust_y();
 	}
 	ui->scroll_area->horizontalScrollBar()->setValue(x);
 	update_tracks();
+	return piano;
 }
 
 void

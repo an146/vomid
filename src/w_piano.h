@@ -59,6 +59,7 @@ public:
 	vmd_note_t *noteAtCursor();
 	Rect selectionRect(bool returnAllIfEmpty = false) const;
 	vmd_note_t *selection(bool returnAllIfEmpty = false) const;
+	void setSelection(vmd_note_t *);
 
 	vmd_track_t *track() const { return track_; }
 	File *file() const { return file_; }
@@ -106,9 +107,10 @@ private:
 	vmd_time_t cursor_time_, cursor_size_;
 	int cursor_level_;
 
-	bool selection_enabled_;
+	bool pivot_enabled_;
 	vmd_time_t pivot_time_;
 	int pivot_level_;
+	vmd_note_t *selection_;
 
 	Player *player_;
 };

@@ -26,7 +26,7 @@ public:
 	WPiano *piano() const;
 	vmd_track_t *track() const;
 
-	void open_track(vmd_track_t *);
+	WPiano *open_track(vmd_track_t *);
 
 public slots:
 	void update_label();
