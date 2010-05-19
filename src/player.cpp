@@ -73,7 +73,7 @@ Player::run()
 {
 	QMutexLocker locker(&stop_mutex_);
 	vmd_reset_output();
-	vmd_file_play(file_, time_, s_event_clb, s_delay_clb, this);
+	vmd_file_play(file_, time_, s_event_clb, s_delay_clb, this, NULL);
 	vmd_notes_off();
 }
 
