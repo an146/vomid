@@ -38,5 +38,5 @@ qt4_wrap_ui (UI_HEADERS ${UIS})
 include_directories (${PROJECT_BINARY_DIR} "libvomid/include")
 
 add_subdirectory (libvomid)
-add_executable (vomid ${SOURCES} ${MOC_SOURCES} ${UI_HEADERS})
+add_executable (vomid WIN32 ${SOURCES} ${MOC_SOURCES} ${UI_HEADERS})
 target_link_libraries (vomid libvomid ${QT_LIBRARIES})
