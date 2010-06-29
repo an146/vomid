@@ -71,7 +71,7 @@ WMain::WMain(Player *_player)
 void
 WMain::add_output_device(const char *id, const char *name)
 {
-	QAction *act = pimpl->ui.menuOutputDevices->addAction(QString(id) + QString("\t") + QString(name));
+	QAction *act = pimpl->ui.menuOutputDevices->addAction(QString(id) + QString("\t") + QString::fromLocal8Bit(name));
 	act->setData(QString(id));
 	pimpl->output_devices.addAction(act);
 	connect(act, SIGNAL(triggered()), &pimpl->device_mapper, SLOT(map()));
