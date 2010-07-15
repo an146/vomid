@@ -37,12 +37,12 @@ WTrack::update_track()
 		ui->program->setMenu(NULL);
 		ui->program->setEnabled(false);
 	} else {
-		ui->program->setText(vmd_gm_program_name[vmd_track_get_program(track)]);
+		ui->program->setText(vmd_gm_program_name[vmd_track_get_ctrl(track, VMD_CCTRL_PROGRAM)]);
 		ui->program->setMenu(program_menu);
 		ui->program->setEnabled(true);
 	}
 	ui->volume->blockSignals(true);
-	ui->volume->setValue(track->value[VMD_TVALUE_VOLUME]);
+	ui->volume->setValue(vmd_track_get_ctrl(track, VMD_CCTRL_VOLUME));
 	ui->volume->update();
 	ui->volume->blockSignals(false);
 }
@@ -56,13 +56,13 @@ WTrack::open(bool on)
 void
 WTrack::program_chosen(QAction *act)
 {
-	vmd_track_set_program(wfile->file()->track[idx], act->data().toInt());
+	vmd_track_set_ctrl(wfile->file()->track[idx], VMD_CCTRL_PROGRAM, act->data().toInt());
 	wfile->file()->commit("Set Program");
 }
 
 void
 WTrack::volume_set(int v)
 {
-	wfile->file()->track[idx]->value[VMD_TVALUE_VOLUME] = v;
+	vmd_track_set_ctrl(wfile->file()->track[idx], VMD_CCTRL_VOLUME, v);
 	wfile->file()->commit("Set Volume");
 }
