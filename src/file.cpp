@@ -41,15 +41,15 @@ File::save_as(QString fn)
 }
 
 void
-File::commit(QString name)
+File::commit(QString desc)
 {
 	FileRevision *newrev;
 
 	try {
-		newrev = new FileRevision(this, name);
+		newrev = new FileRevision(this, desc);
 	} catch (const std::exception &ex) {
 		revert();
-		qWarning("%s: failed", name.toAscii().data());
+		qWarning("%s: failed", desc.toAscii().data());
 		return;
 	}
 
@@ -101,9 +101,9 @@ File::redo()
 	}
 }
 
-FileRevision::FileRevision(File *f, QString _name)
+FileRevision::FileRevision(File *f, QString _desc)
 	:rev_(vmd_file_commit(f)),
-	name_(_name),
+	desc_(_desc),
 	prev_(f->revision()),
 	next_(NULL)
 {

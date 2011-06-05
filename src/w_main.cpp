@@ -226,14 +226,14 @@ WMain::current_changed()
 	/* Edit */
 	pimpl->ui.menuEdit->setEnabled(f != NULL);
 	if (f && f->revision()->prev() != NULL) {
-		pimpl->ui.actionUndo->setText("Undo " + f->revision()->name());
+		pimpl->ui.actionUndo->setText("Undo " + f->revision()->desc());
 		pimpl->ui.actionUndo->setEnabled(true);
 	} else {
 		pimpl->ui.actionUndo->setText("Undo");
 		pimpl->ui.actionUndo->setEnabled(false);
 	}
 	if (f && f->revision()->next() != NULL) {
-		pimpl->ui.actionRedo->setText("Redo " + f->revision()->next()->name());
+		pimpl->ui.actionRedo->setText("Redo " + f->revision()->next()->desc());
 		pimpl->ui.actionRedo->setEnabled(true);
 	} else {
 		pimpl->ui.actionRedo->setText("Redo");

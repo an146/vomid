@@ -49,17 +49,17 @@ class FileRevision
 	friend class File;
 
 public:
-	QString name() const { return name_; }
+	QString desc() const { return desc_; }
 	FileRevision *prev() { return prev_; }
 	FileRevision *next() { return next_; }
 
 protected:
-	FileRevision(File *, QString);
+	FileRevision(File *file, QString desc);
 	~FileRevision();
 
 private:
 	vmd_file_rev_t *rev_;
-	QString name_;
+	QString desc_;
 	FileRevision *prev_, *next_;
 };
 
