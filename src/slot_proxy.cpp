@@ -4,14 +4,14 @@
 #include "slot_proxy.h"
 using namespace std;
 
-struct Connection {
-	QPointer<QObject> src;
-	const char *signal;
-	const char *slot;
-};
-
 struct SlotProxy::Impl
 {
+	struct Connection {
+		QPointer<QObject> src;
+		const char *signal;
+		const char *slot;
+	};
+
 	QPointer<QObject> target;
 	QList<Connection> conns;
 };
@@ -20,26 +20,22 @@ SlotProxy::SlotProxy()
 {
 }
 
-#define TARGET (pimpl->target)
-#define CONNS  (pimpl->conns)
-
 void SlotProxy::connect(QObject *src, const char *signal, const char *slot)
 {
-	Connection conn = {src, signal, slot};
-	pimpl->conns.push_back(conn);
-	if (TARGET != NULL)
-		QObject::connect(src, signal, TARGET, slot);
+	impl->conns.push_back((Impl::Connection){src, signal, slot});
+	if (impl->target != NULL)
+		QObject::connect(src, signal, impl->target, slot);
 }
 
-void SlotProxy::setTarget(QObject *t)
+void SlotProxy::setTarget(QObject *target)
 {
-	for (QList<Connection>::iterator i = CONNS.begin(); i != CONNS.end(); ++i) {
-		if (i->src == NULL)
+	foreach (const Impl::Connection &i, impl->conns) {
+		if (i.src == NULL)
 			continue;
-		if (TARGET != NULL)
-			QObject::disconnect(i->src, i->signal, TARGET, i->slot);
-		if (t != NULL)
-			QObject::connect(i->src, i->signal, t, i->slot);
+		if (impl->target != NULL)
+			QObject::disconnect(i.src, i.signal, impl->target, i.slot);
+		if (target != NULL)
+			QObject::connect(i.src, i.signal, target, i.slot);
 	}
-	TARGET = t;
+	impl->target = target;
 }
