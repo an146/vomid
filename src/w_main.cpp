@@ -71,7 +71,8 @@ WMain::WMain(Player *_player)
 void
 WMain::add_output_device(const char *id, const char *name)
 {
-	QAction *act = pimpl->ui.menuOutputDevices->addAction(QString(id) + QString("\t") + QString::fromLocal8Bit(name));
+	QString label = QString(id) + QString("\t") + QString::fromLocal8Bit(name);
+	QAction *act = pimpl->ui.menuOutputDevices->addAction(label);
 	act->setData(QString(id));
 	pimpl->output_devices.addAction(act);
 	connect(act, SIGNAL(triggered()), &pimpl->device_mapper, SLOT(map()));
@@ -120,9 +121,9 @@ WMain::menu_open()
 		"Midi files (*.mid);;All files (*)"
 	);
 
-	for (QStringList::const_iterator i = files.begin(); i != files.end(); ++i) {
+	foreach (const QString &i, files) {
 		try {
-			open(new File(*i));
+			open(new File(i));
 		} catch (...) {
 			qWarning("Failed to open file");
 		}
