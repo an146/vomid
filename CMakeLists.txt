@@ -30,15 +30,19 @@ set (UIS
 	src/w_file_info.ui
 )
 
-find_package (Qt4 REQUIRED)
-include (${QT_USE_FILE})
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-qt4_wrap_cpp (MOC_SOURCES ${MOC_HEADERS})
-qt4_wrap_ui (UI_HEADERS ${UIS})
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
 include_directories (${PROJECT_BINARY_DIR} "libvomid/include")
 
 include (CTest)
 enable_testing()
 add_subdirectory (libvomid)
 add_executable (vomid WIN32 ${SOURCES} ${MOC_SOURCES} ${UI_HEADERS})
-target_link_libraries (vomid libvomid ${QT_LIBRARIES})
+target_link_libraries (vomid PRIVATE libvomid Qt6::Widgets)

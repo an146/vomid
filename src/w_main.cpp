@@ -1,9 +1,11 @@
+#include <QActionGroup>
 #include <QCloseEvent>
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QLabel>
 #include <QMessageBox>
 #include <QSignalMapper>
+#include <QStyle>
 #include "file.h"
 #include "player.h"
 #include "slot_proxy.h"

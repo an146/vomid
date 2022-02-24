@@ -49,7 +49,7 @@ File::commit(QString descr)
 		newrev = new FileRevision(this, descr);
 	} catch (const std::exception &ex) {
 		revert();
-		qWarning("%s: failed", descr.toAscii().data());
+		qWarning("%s: failed", descr.toLatin1().data());
 		return;
 	}
 

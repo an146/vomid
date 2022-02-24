@@ -541,7 +541,7 @@ WPiano::mouseMoveEvent(QMouseEvent *ev)
 		return;
 
 	clipCursor();
-	setCursorPos(grid_snap_left(this, x2time(ev->x())), y2level(ev->y()));
+	setCursorPos(grid_snap_left(this, x2time(ev->position().x())), y2level(ev->position().y()));
 	look_at_cursor(MINSCROLL);
 }
 

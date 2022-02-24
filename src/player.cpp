@@ -53,7 +53,7 @@ Player::stop()
 bool
 Player::set_output_device(QString id)
 {
-	if (vmd_set_device(VMD_OUTPUT_DEVICE, id.toAscii().data()) == VMD_OK) {
+	if (vmd_set_device(VMD_OUTPUT_DEVICE, id.toLatin1().data()) == VMD_OK) {
 		emit outputDeviceSet(id);
 		return true;
 	} else

@@ -56,7 +56,7 @@ WFileInfo::WFileInfo(WFile *_wfile)
 		ti->setText(0, track_text);
 		ti->setText(1, QString::number(vmd_bst_size(&track->notes)));
 	}
-	ui->channelsTree->header()->setResizeMode(QHeaderView::ResizeToContents);
+	ui->channelsTree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 	connect(ui->channelsTree, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)),
 	        this, SLOT(channelsTreeItemDoubleClicked(QTreeWidgetItem *, int)));
 }
